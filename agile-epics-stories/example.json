@@ -1,0 +1,113 @@
+{
+  "id": "EPIC-DTC-001",
+  "metadata": {
+    "title": "Automated Design Handoff - Phase 1",
+    "owner": "Lead PM, Workflow Tools",
+    "status": "In Progress",
+    "targetReleaseVersion": "v2.0.0",
+    "labels": ["design-to-code", "ai-harness", "q2-initiative"]
+  },
+  "description": "Establish the foundational pipeline that connects external design publishes to our internal code generation engine, eliminating manual UI boilerplate coding.",
+  "businessValue": "Reduces the time from design-approval to first-line-of-code by 90%, freeing up frontend engineers to focus on complex state management rather than pixel-pushing.",
+  "userStories": [
+    {
+      "id": "STORY-DTC-101",
+      "metadata": {
+        "title": "Ingest Webhook from Figma",
+        "assignee": "Backend Engineer (Platform)",
+        "status": "Done",
+        "storyPoints": 5,
+        "priority": "Highest",
+        "labels": ["backend", "api", "security"]
+      },
+      "storyStatement": {
+        "role": "System Administrator",
+        "feature": "the system to securely receive payload events from Figma webhooks",
+        "benefit": "we can trigger the AI generation pipeline exactly when a designer publishes a library update."
+      },
+      "acceptanceCriteria": [
+        {
+          "id": "AC-101-A",
+          "title": "Valid Signature Acceptance",
+          "scenarios": [
+            {
+              "scenarioName": "Webhook payload contains a valid HMAC signature",
+              "given": [
+                "The Fastify API is running",
+                "A POST request is made to /api/v1/webhooks/design-publish"
+              ],
+              "when": [
+                "The X-Signature header matches the SHA-256 hash of the payload using the Vault secret"
+              ],
+              "then": [
+                "The system responds with HTTP 202 Accepted",
+                "The payload is placed onto the processing queue"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "AC-101-B",
+          "title": "Invalid Signature Rejection",
+          "scenarios": [
+            {
+              "scenarioName": "Webhook payload contains an invalid or missing signature",
+              "given": [
+                "The Fastify API is running"
+              ],
+              "when": [
+                "A POST request is received with a mismatched X-Signature header"
+              ],
+              "then": [
+                "The system responds with HTTP 401 Unauthorized",
+                "A security alert is logged to Splunk",
+                "The payload is immediately dropped"
+              ]
+            }
+          ]
+        }
+      ],
+      "technicalTasksRef": ["TASK-DTC-101-A (Set up Fastify Route)", "TASK-DTC-101-B (HMAC Middleware)"]
+    },
+    {
+      "id": "STORY-DTC-105",
+      "metadata": {
+        "title": "Automated PR Creation for Generated Components",
+        "status": "To Do",
+        "storyPoints": 8,
+        "priority": "High",
+        "labels": ["ai-harness", "github-api"]
+      },
+      "storyStatement": {
+        "role": "Frontend Developer",
+        "feature": "the AI engine to automatically open a Pull Request with the generated React code",
+        "benefit": "I can review, tweak, and merge the component directly in my existing GitHub workflow rather than copy-pasting from a dashboard."
+      },
+      "acceptanceCriteria": [
+        {
+          "id": "AC-105-A",
+          "title": "Successful Generation PR Flow",
+          "scenarios": [
+            {
+              "scenarioName": "AI engine successfully generates a valid AST and Code string",
+              "given": [
+                "The Polyglot Generation Engine has finished processing a node graph",
+                "The generated code passes the ESLint AST syntax check"
+              ],
+              "when": [
+                "The generation phase completes successfully"
+              ],
+              "then": [
+                "The system creates a new branch named 'ai-gen/component-{id}'",
+                "The system commits the file to 'src/components/generated/'",
+                "A Pull Request is opened against the 'main' branch",
+                "The PR description includes a link to the original Figma design node",
+                "The GitHub CODEOWNERS team is automatically tagged as reviewers"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

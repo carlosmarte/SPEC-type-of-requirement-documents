@@ -1,0 +1,128 @@
+{
+  "id": "bpd-2026-it-provisioning",
+  "metadata": {
+    "title": "New Hire IT Equipment Provisioning",
+    "processOwner": "Director of IT Operations",
+    "author": "Lead Business Systems Analyst",
+    "state": "To-Be",
+    "status": "Approved",
+    "version": "2.1.0",
+    "lastUpdated": "2026-05-16T16:00:00Z"
+  },
+  "overview": {
+    "purpose": "To ensure new employees receive their configured laptop and security tokens prior to their Day 1 start date, utilizing zero-touch enrollment.",
+    "scope": "Covers the process from HR contract signature to physical delivery of the hardware. Excludes software license provisioning (covered in BPD-2026-SW-PROV).",
+    "triggeringEvents": [
+      "HR Information System (Workday) status changes to 'Hired'."
+    ],
+    "expectedOutcomes": [
+      "Employee physically receives laptop.",
+      "Asset is registered in the IT Service Management (ITSM) CMDB."
+    ],
+    "systemsInvolved": ["Workday", "ServiceNow (ITSM)", "Apple Business Manager", "FedEx API"]
+  },
+  "actors": [
+    {
+      "roleId": "ACT-01",
+      "name": "Workday Integration System",
+      "type": "System",
+      "description": "HR platform that pushes new hire data."
+    },
+    {
+      "roleId": "ACT-02",
+      "name": "IT Asset Manager",
+      "type": "Human",
+      "description": "IT staff responsible for physical inventory."
+    },
+    {
+      "roleId": "ACT-03",
+      "name": "ServiceNow Orchestrator",
+      "type": "System",
+      "description": "Automated workflow engine."
+    }
+  ],
+  "processSteps": [
+    {
+      "stepId": "STEP-100",
+      "name": "Generate Provisioning Ticket",
+      "type": "Automated System Task",
+      "actorRef": "ACT-01",
+      "description": "Workday fires a webhook to ServiceNow containing the new hire's role, start date, and shipping address.",
+      "inputs": ["Signed Offer Letter Metadata"],
+      "outputs": ["ServiceNow RITM (Requested Item) Ticket"],
+      "nextSteps": [
+        {
+          "targetStepId": "STEP-110",
+          "condition": "Always"
+        }
+      ]
+    },
+    {
+      "stepId": "STEP-110",
+      "name": "Role-to-Hardware Mapping",
+      "type": "Decision Gateway",
+      "actorRef": "ACT-03",
+      "description": "ServiceNow checks the mapping matrix to determine the correct hardware SKU based on the employee's department.",
+      "inputs": ["ServiceNow RITM Ticket", "Hardware Mapping Matrix"],
+      "outputs": ["Selected Hardware SKU"],
+      "nextSteps": [
+        {
+          "targetStepId": "STEP-120",
+          "condition": "If Role = Engineering (MacBook Pro 16)"
+        },
+        {
+          "targetStepId": "STEP-120",
+          "condition": "If Role = Standard Business (MacBook Air 13)"
+        }
+      ]
+    },
+    {
+      "stepId": "STEP-120",
+      "name": "Pick and Pack Hardware",
+      "type": "Manual Task",
+      "actorRef": "ACT-02",
+      "description": "Asset Manager pulls the physical laptop from inventory, scans the serial number into ServiceNow, and prints the FedEx shipping label.",
+      "inputs": ["Selected Hardware SKU", "Physical Inventory"],
+      "outputs": ["Packaged Laptop", "Tracking Number"],
+      "nextSteps": [
+        {
+          "targetStepId": "STEP-130",
+          "condition": "Always"
+        }
+      ]
+    },
+    {
+      "stepId": "STEP-130",
+      "name": "Zero-Touch Enrollment Registration",
+      "type": "Automated System Task",
+      "actorRef": "ACT-03",
+      "description": "ServiceNow registers the scanned Serial Number with Apple Business Manager and assigns the Mobile Device Management (MDM) profile.",
+      "inputs": ["Laptop Serial Number"],
+      "outputs": ["MDM Registration Confirmation"],
+      "nextSteps": []
+    }
+  ],
+  "exceptions": [
+    {
+      "exceptionId": "EXC-001",
+      "triggeringStepIdRef": "STEP-120",
+      "condition": "Required Hardware SKU is Out of Stock in local inventory.",
+      "handlingProcedure": "Asset Manager overrides the ticket to generate a drop-ship purchase order directly to the vendor (CDW) using the employee's shipping address. Asset Manager updates the RITM state to 'Awaiting Vendor Shipment'.",
+      "escalationRoleRef": "Director of IT Operations"
+    }
+  ],
+  "metrics": [
+    {
+      "kpiName": "Hardware Provisioning Cycle Time",
+      "baseline": "4.5 Days (Manual Process)",
+      "targetValue": "< 24 Hours",
+      "measurementMethod": "Time elapsed between Workday webhook receipt (STEP-100) and FedEx label generation (STEP-120)."
+    },
+    {
+      "kpiName": "Zero-Touch Success Rate",
+      "baseline": "0% (New Capability)",
+      "targetValue": "> 98%",
+      "measurementMethod": "Percentage of laptops that successfully pull their MDM profile upon first boot without IT intervention."
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+{
+  "id": "srs-2026-icu-vitals-monitor",
+  "metadata": {
+    "title": "ICU Vitals Telemetry Gateway SRS",
+    "version": "2.1.0",
+    "authors": ["Lead Systems Engineer", "Clinical Safety Officer"],
+    "approvers": ["Director of Engineering", "VP of Regulatory Compliance"],
+    "status": "Baselined",
+    "lastUpdated": "2026-05-16T14:30:00Z",
+    "projectCode": "PRJ-MED-882"
+  },
+  "introduction": {
+    "purpose": "This document specifies the software requirements for the ICU Vitals Telemetry Gateway, which bridges bedside physiological monitors to the central hospital Electronic Health Record (EHR) system.",
+    "documentScope": "This SRS covers data ingestion from bedside monitors, HL7 message formatting, and secure transmission to the EHR. It does not cover the physical hardware of the bedside monitors.",
+    "definitionsAndAcronyms": {
+      "EHR": "Electronic Health Record",
+      "HL7": "Health Level Seven International (Standards for health data exchange)",
+      "PHI": "Protected Health Information"
+    },
+    "references": [
+      {
+        "documentId": "FDA-MDDS-2015",
+        "title": "Medical Device Data Systems, Medical Image Storage Devices, and Medical Image Communications Devices",
+        "urlOrLocation": "FDA Guidance Document Library"
+      }
+    ]
+  },
+  "overallDescription": {
+    "productPerspective": "The system operates as middleware on dedicated hospital servers, sitting between the isolated bedside device network and the primary hospital IT network.",
+    "productFunctions": [
+      "Continuous ingestion of heart rate, SpO2, and blood pressure data.",
+      "Conversion of proprietary device signals into standard HL7 v2.x messages.",
+      "Transmission of HL7 messages to the EHR."
+    ],
+    "userCharacteristics": [
+      "No direct clinical user interface. Operated entirely by Hospital IT System Administrators."
+    ],
+    "operatingEnvironment": "On-premise Red Hat Enterprise Linux (RHEL) 9 servers."
+  },
+  "specificRequirements": {
+    "functionalRequirements": [
+      {
+        "reqId": "FR-TLM-014",
+        "title": "HL7 Message Construction",
+        "description": "The system shall construct an HL7 ORU^R01 observation message for every complete set of vitals received.",
+        "priority": "Critical",
+        "inputs": ["Raw byte stream from bedside monitor IP", "Patient MRN lookup table"],
+        "processingLogic": "Parse byte stream to extract HR, SpO2, and BP values. Map values to corresponding LOINC codes. Construct HL7 string segments (MSH, PID, OBR, OBX).",
+        "outputs": ["Formatted HL7 ORU^R01 string"],
+        "errorHandling": "If the byte stream is malformed, log a Level 2 System Error and discard the packet. Do not attempt to guess or interpolate missing clinical values."
+      }
+    ],
+    "nonFunctionalRequirements": {
+      "performance": [
+        "The system shall process and transmit a vitals packet to the EHR within 500 milliseconds of receipt."
+      ],
+      "reliability": [
+        "The system shall experience no more than 1 dropped packet per 10,000 continuous transmissions."
+      ],
+      "availability": [
+        "The gateway service shall maintain 99.999% availability."
+      ],
+      "security": [
+        "All data in transit across the hospital network must be encrypted using TLS 1.3 or higher.",
+        "The system shall not store unencrypted PHI on the local disk."
+      ],
+      "maintainability": [
+        "The system shall support zero-downtime rolling updates via clustering."
+      ],
+      "portability": [
+        "The software must be capable of running in an air-gapped environment without internet access."
+      ]
+    }
+  },
+  "externalInterfaces": [
+    {
+      "interfaceId": "IF-HW-01",
+      "category": "Hardware",
+      "name": "Bedside Monitor Serial/IP Bridge",
+      "description": "Interface receiving raw telemetry data from physical patient monitors.",
+      "communicationProtocol": "TCP/IP over dedicated VLAN",
+      "dataFormat": "Vendor-specific binary payload"
+    },
+    {
+      "interfaceId": "IF-SW-02",
+      "category": "Software",
+      "name": "EHR Integration Engine",
+      "description": "Downstream hospital record system receiving the formatted data.",
+      "communicationProtocol": "MLLP (Minimal Lower Layer Protocol)",
+      "dataFormat": "HL7 v2.5.1"
+    }
+  ],
+  "assumptionsAndConstraints": {
+    "assumptions": [
+      "The hospital network provides a dedicated, uncontended VLAN for telemetry traffic.",
+      "Bedside monitors are calibrated and sending accurate physical data."
+    ],
+    "businessConstraints": [
+      "Must be completed in time for the Q4 FDA 510(k) submission window."
+    ],
+    "technicalConstraints": [
+      "System must be developed in C++17 to meet memory management predictability requirements."
+    ],
+    "regulatoryCompliance": [
+      "HIPAA (Health Insurance Portability and Accountability Act)",
+      "FDA 21 CFR Part 820 (Quality System Regulation)"
+    ]
+  },
+  "appendices": [
+    {
+      "title": "Appendix A: Traceability Matrix",
+      "description": "Mapping of FR-TLM-XXX requirements to specific hazard mitigations in the risk management file.",
+      "contentRef": "https://doors.internal.local/project/882/matrix"
+    }
+  ]
+}

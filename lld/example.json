@@ -1,0 +1,115 @@
+{
+  "id": "lld-2026-design-graph-ingestion",
+  "metadata": {
+    "title": "Figma Webhook & Graph Traversal LLD",
+    "author": "Senior Software Engineer",
+    "reviewers": ["System Architect"],
+    "status": "Approved",
+    "lastUpdated": "2026-05-16T10:00:00Z"
+  },
+  "parentComponentRef": "sys-ingestion",
+  "modules": [
+    {
+      "id": "mod-graph-traversal",
+      "name": "Graph Traversal Engine",
+      "directoryPath": "src/modules/traversal/",
+      "description": "Recursively parses nested UI node trees into a flattened, relational format.",
+      "codeUnits": [
+        {
+          "name": "FigmaNodeParser",
+          "type": "Class",
+          "description": "Orchestrates the depth-first traversal of the incoming design payload.",
+          "parameters": [
+            {
+              "name": "rootNode",
+              "dataType": "FigmaDocumentNode",
+              "required": true,
+              "description": "The raw JSON root node from the webhook payload."
+            }
+          ],
+          "returnType": "NormalizedGraphData",
+          "validationRules": [
+            "Input must contain a valid document ID",
+            "Node tree depth must not exceed 50 levels to prevent stack overflows"
+          ],
+          "exceptionsThrown": ["MaxDepthExceededError", "MalformedNodeError"]
+        }
+      ]
+    }
+  ],
+  "apiContracts": [
+    {
+      "endpoint": "/api/v1/webhooks/design-publish",
+      "method": "POST",
+      "description": "Receives component publish events from the external design tool.",
+      "requestSchema": "FigmaWebhookPayloadDTO",
+      "responseSchema": "{ \"status\": \"accepted\", \"jobId\": \"string\" }",
+      "errorCodes": {
+        "400": "Invalid Payload Structure",
+        "401": "Missing or Invalid HMAC Signature",
+        "429": "Rate Limit Exceeded"
+      }
+    }
+  ],
+  "dataModels": [
+    {
+      "tableName": "active_component_atlas",
+      "description": "Stores the flattened, normalized representation of design components mapping to code.",
+      "fields": [
+        {
+          "name": "component_id",
+          "dataType": "UUID",
+          "constraints": ["PRIMARY KEY"],
+          "description": "Internal tracking ID"
+        },
+        {
+          "name": "external_node_id",
+          "dataType": "VARCHAR(255)",
+          "constraints": ["NOT NULL", "UNIQUE"],
+          "description": "Original node ID from the design tool"
+        },
+        {
+          "name": "css_properties",
+          "dataType": "JSONB",
+          "constraints": ["NOT NULL"],
+          "description": "Extracted style metadata mapped to standard CSS"
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_external_node ON active_component_atlas(external_node_id)"
+      ]
+    }
+  ],
+  "sequenceLogic": [
+    {
+      "scenarioName": "Process Incoming Design Webhook",
+      "trigger": "POST request to /api/v1/webhooks/design-publish",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "actor": "WebhookMiddleware",
+          "action": "Calculate SHA256 HMAC of the request body and compare with the X-Signature header.",
+          "onFailure": "Return 401 Unauthorized and log security event."
+        },
+        {
+          "stepNumber": 2,
+          "actor": "Fastify WebhookController",
+          "action": "Acknowledge receipt to the external API by returning 202 Accepted with a generated jobId.",
+          "onFailure": "Return 500 Internal Server Error."
+        },
+        {
+          "stepNumber": 3,
+          "actor": "FigmaNodeParser",
+          "action": "Execute depth-first traversal of the payload, normalizing variants into standard CSS JSONB objects.",
+          "onFailure": "Mark jobId as FAILED in database and alert observability platform."
+        },
+        {
+          "stepNumber": 4,
+          "actor": "PostgresRepository",
+          "action": "Perform bulk UPSERT operation into active_component_atlas table using the normalized data.",
+          "onFailure": "Rollback transaction and retry with exponential backoff up to 3 times."
+        }
+      ]
+    }
+  ]
+}

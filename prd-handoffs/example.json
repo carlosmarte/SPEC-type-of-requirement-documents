@@ -1,0 +1,87 @@
+{
+  "id": "prd-2026-smart-search",
+  "metadata": {
+    "title": "AI-Powered Semantic Search",
+    "productManager": "Sarah Jenkins",
+    "leadDesigner": "Marcus Thorne",
+    "leadEngineer": "David Chen",
+    "currentPhase": "Engineering Review",
+    "lastUpdated": "2026-05-16T10:00:00Z"
+  },
+  "productVision": "Transition our legacy keyword search to a semantic, natural-language search engine to help users find complex software components using conversational queries, thereby increasing asset reuse.",
+  "targetAudience": [
+    {
+      "name": "Frontend Developer",
+      "role": "End User",
+      "painPoints": [
+        "Cannot find existing components if they don't know the exact file name.",
+        "Wastes time rebuilding UI elements that already exist."
+      ],
+      "primaryGoal": "Quickly locate and integrate existing React components based on visual or behavioral descriptions."
+    }
+  ],
+  "successMetrics": [
+    {
+      "metricName": "Search-to-Copy Conversion Rate",
+      "baseline": "12%",
+      "target": "30%",
+      "measurementTool": "PostHog Analytics"
+    },
+    {
+      "metricName": "Zero-Result Search Rate",
+      "baseline": "22%",
+      "target": "< 5%",
+      "measurementTool": "Elasticsearch Logs"
+    }
+  ],
+  "designConstraints": [
+    "Must fit within the existing global navigation header.",
+    "Must support dark mode seamlessly.",
+    "Search results must appear inline without requiring a page reload."
+  ],
+  "features": [
+    {
+      "id": "FEAT-SEARCH-001",
+      "name": "Natural Language Query Input",
+      "priority": "P0 (Must Have)",
+      "userStories": [
+        {
+          "id": "US-001",
+          "asA": "Frontend Developer",
+          "iWantTo": "type 'blue button with a cart icon'",
+          "soThat": "the system returns the `PrimaryActionBtn` component even if the word 'blue' isn't in the component's title."
+        }
+      ],
+      "uxTransition": {
+        "status": "Aligned",
+        "designMockupRefs": [
+          "https://figma.com/file/xyz/Search-Redesign?node-id=102-4"
+        ],
+        "interactionNotes": "The search bar should expand smoothly on focus. A skeleton loader should pulse while waiting for the AI response.",
+        "accessibilityRequirements": [
+          "Search input must have aria-label='Semantic Search'",
+          "Results list must trap focus and allow up/down arrow key navigation."
+        ],
+        "pmSignOff": true
+      },
+      "engineeringTransition": {
+        "status": "Blocked",
+        "technicalConstraints": [
+          "The proposed 'instant search' skeleton loader conflicts with the vector database latency. We cannot guarantee results in under 500ms, which will make the UI feel broken if it expands instantly."
+        ],
+        "architectureSpecRef": "hld-2026-vector-search",
+        "levelOfEffort": "Large",
+        "designFeasibilityConfirmed": false
+      }
+    }
+  ],
+  "roadmap": [
+    {
+      "phaseName": "Phase 1: Semantic Backend & Internal Beta",
+      "targetDate": "Q3 2026",
+      "includedFeatureIds": [
+        "FEAT-SEARCH-001"
+      ]
+    }
+  ]
+}

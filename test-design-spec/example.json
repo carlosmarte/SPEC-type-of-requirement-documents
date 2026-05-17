@@ -1,0 +1,99 @@
+{
+  "id": "tds-2026-design-to-code",
+  "metadata": {
+    "title": "Design-to-Code Platform Test Strategy",
+    "author": "Lead SDET",
+    "engineeringLead": "System Architect",
+    "status": "Approved",
+    "lastUpdated": "2026-05-16T15:30:00Z"
+  },
+  "strategyOverview": "This spec defines the validation strategy for the ingestion, orchestration, and code-generation pipelines. Because the outputs are visually rendered code (React ASTs), we will heavily rely on visual regression testing alongside standard unit/integration layers.",
+  "acceptanceCriteria": [
+    {
+      "id": "AC-001",
+      "featureRef": "REQ-104-Webhook-Ingestion",
+      "description": "System must return a 202 Accepted within 500ms of receiving a valid Figma webhook, regardless of payload size.",
+      "testType": "Integration"
+    },
+    {
+      "id": "AC-002",
+      "featureRef": "REQ-205-Code-Gen",
+      "description": "Generated React components must pass strict ESLint validation without manual intervention.",
+      "testType": "E2E"
+    }
+  ],
+  "testingLevels": {
+    "unit": {
+      "frameworks": ["Jest", "PyTest"],
+      "coverageTargetPercentage": 85,
+      "focusAreas": [
+        "Figma node tree traversal logic",
+        "AST string stringification methods",
+        "HMAC signature validation algorithms"
+      ]
+    },
+    "integration": {
+      "frameworks": ["Supertest", "Testcontainers (PostgreSQL)"],
+      "coverageTargetPercentage": 70,
+      "focusAreas": [
+        "Database UPSERT behavior during component updates",
+        "Redis pub/sub event broadcasting to the orchestration harness"
+      ]
+    },
+    "e2e": {
+      "frameworks": ["Playwright", "Chromatic (Visual Regression)"],
+      "coverageTargetPercentage": 100,
+      "focusAreas": [
+        "End-to-end pipeline from mock webhook to PR generation"
+      ],
+      "criticalUserJourneys": [
+        "Publishing a new Design System Token",
+        "Updating an existing React component with new CSS variants"
+      ],
+      "crossPlatformTargeting": ["Chrome Desktop", "Firefox Desktop"]
+    }
+  },
+  "nonFunctionalTesting": {
+    "performance": {
+      "tools": ["k6"],
+      "loadTargets": {
+        "concurrentUsers": 0,
+        "requestsPerSecond": 300,
+        "p99LatencyMs": 30000
+      },
+      "enduranceTestingRequired": true
+    },
+    "security": {
+      "tools": ["Snyk (Dependencies)", "TruffleHog (Secrets)"],
+      "penetrationTestingRequired": false,
+      "complianceChecks": [
+        "Verify generated code contains no hardcoded API keys",
+        "Verify external payloads cannot execute arbitrary shell commands (Prompt Injection)"
+      ]
+    }
+  },
+  "testDataManagement": {
+    "generationStrategy": "Static Mocks",
+    "refreshCadence": "Loaded via JSON fixtures on every test run",
+    "dataDependencies": [
+      "JSON snapshots of production Figma document nodes",
+      "Mock GitHub App installation tokens"
+    ]
+  },
+  "testEnvironments": [
+    {
+      "tier": "CI",
+      "infrastructureRef": "GitHub Actions Ephemeral Runners",
+      "mockedExternalServices": [
+        "Figma API",
+        "GitHub REST API",
+        "OpenAI API"
+      ]
+    },
+    {
+      "tier": "Staging",
+      "infrastructureRef": "eks-staging-platform",
+      "mockedExternalServices": []
+    }
+  ]
+}

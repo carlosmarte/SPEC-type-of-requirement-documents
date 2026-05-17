@@ -1,0 +1,86 @@
+{
+  "id": "perf-2026-design-ingestion",
+  "metadata": {
+    "title": "Design Graph Ingestion Performance Spec",
+    "author": "Principal Performance Engineer",
+    "systemRef": "sys-ingestion",
+    "status": "Approved",
+    "lastUpdated": "2026-05-16T18:30:00Z"
+  },
+  "loadAssumptions": {
+    "baselineTraffic": {
+      "requestsPerSecond": 50,
+      "concurrentActiveUsers": 150,
+      "averagePayloadSizeBytes": 250000
+    },
+    "peakTraffic": {
+      "requestsPerSecond": 1200,
+      "concurrentActiveUsers": 3000,
+      "averagePayloadSizeBytes": 1500000
+    },
+    "expectedAnnualGrowthPercentage": 40,
+    "seasonality": "Significant spikes expected on Mondays at 9:00 AM EST and immediately following major internal design library releases."
+  },
+  "serviceLevelAgreements": {
+    "latencyTargets": {
+      "p50": "45ms",
+      "p95": "120ms",
+      "p99": "250ms",
+      "p99.9": "800ms"
+    },
+    "throughputTargets": [
+      {
+        "operationName": "Webhook Acceptance (202 response)",
+        "targetUnitsPerSecond": 1500
+      },
+      {
+        "operationName": "Graph Normalization & DB UPSERT",
+        "targetUnitsPerSecond": 800
+      }
+    ],
+    "availabilityTarget": "99.95%"
+  },
+  "concurrencyModel": {
+    "maxConcurrentConnections": 5000,
+    "connectionPoolConfig": {
+      "database": 400,
+      "redis": 1000,
+      "externalApis": 50
+    },
+    "backpressureStrategy": "Rate Limit (429)"
+  },
+  "cachingStrategy": [
+    {
+      "layerName": "Node Translation Lookup Cache (Redis)",
+      "strategyType": "Read-Through",
+      "ttlSeconds": 3600,
+      "evictionPolicy": "LRU",
+      "expectedHitRatePercentage": 85
+    }
+  ],
+  "scalingLimits": {
+    "identifiedBottlenecks": [
+      "PostgreSQL write-locks during massive bulk UPSERTs of heavily nested node graphs.",
+      "Network bandwidth saturation on the NAT Gateway during peak payload ingestion."
+    ],
+    "maxScaleOutInstances": 100,
+    "databaseConnectionLimit": 500,
+    "externalQuotaLimits": {
+      "Figma API (Read)": "5000 requests per minute",
+      "AWS KMS (Decryption)": "10000 requests per second"
+    }
+  },
+  "loadTestingRequirements": {
+    "tool": "k6 Distributed Cloud",
+    "targetScenarios": [
+      "Steady State: 100 RPS for 60 minutes",
+      "Spike Test: 0 to 1500 RPS in 10 seconds",
+      "Soak Test: 300 RPS for 24 hours to monitor for memory leaks"
+    ],
+    "successCriteria": [
+      "Zero dropped requests during steady state",
+      "No 500/503 errors during spike test; system correctly degrades to 429 Rate Limits",
+      "P99 latency stays under 300ms across all scenarios"
+    ]
+  }
+}

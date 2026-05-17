@@ -1,0 +1,145 @@
+{
+  "id": "api-spec-2026-polyglot-generation",
+  "metadata": {
+    "title": "Polyglot Component Generation API",
+    "description": "Internal API for autonomously transforming normalized design node graphs into production-ready React ASTs and code blocks.",
+    "version": "v2.1.0",
+    "protocol": "REST",
+    "contactEmail": "platform-engineering@local.internal"
+  },
+  "servers": [
+    {
+      "environment": "Production",
+      "baseUrl": "https://api.internal.local/generation",
+      "description": "Main production cluster mapped via API Gateway"
+    },
+    {
+      "environment": "Staging",
+      "baseUrl": "https://api-staging.internal.local/generation",
+      "description": "Pre-release sandbox for agent testing"
+    }
+  ],
+  "securitySchemes": [
+    {
+      "id": "sec-internal-jwt",
+      "type": "JWT",
+      "description": "Standard internal service-to-service authentication using RS256 signed JWTs.",
+      "headerName": "Authorization"
+    }
+  ],
+  "rateLimits": {
+    "requestsPerWindow": 500,
+    "windowDurationSeconds": 60,
+    "description": "Global rate limit to prevent agent loops from overwhelming the code generation engine.",
+    "headersReturned": ["X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"]
+  },
+  "endpoints": [
+    {
+      "id": "ep-generate-react",
+      "path": "/v2/react/components",
+      "method": "POST",
+      "summary": "Generate React Component",
+      "description": "Accepts a normalized JSON graph of CSS/structure data and returns a functional React component string using styled-components.",
+      "securityRequired": ["sec-internal-jwt"],
+      "parameters": [
+        {
+          "name": "dry-run",
+          "in": "query",
+          "required": false,
+          "schemaType": "boolean",
+          "description": "If true, validates the input graph but skips actual AST compilation.",
+          "example": true
+        }
+      ],
+      "requestBody": {
+        "contentType": "application/json",
+        "schemaRef": "NormalizedDesignGraph",
+        "required": true,
+        "example": {
+          "componentId": "btn-primary-001",
+          "nodes": [
+            { "type": "FRAME", "width": 120, "height": 40, "fills": ["#0052CC"] },
+            { "type": "TEXT", "content": "Submit", "fontFamily": "Inter" }
+          ]
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Code generation successful",
+          "content": {
+            "application/json": {
+              "schemaRef": "GenerationSuccessResponse",
+              "example": {
+                "status": "success",
+                "code": "import React from 'react';\nimport styled from 'styled-components';\n\nexport const Button = () => {\n  return <StyledButton>Submit</StyledButton>;\n};"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Bad Request - Invalid graph structure",
+          "content": {
+            "application/json": {
+              "schemaRef": "ErrorResponse",
+              "example": {
+                "error": "InvalidGraphStructure",
+                "message": "Node array cannot be empty."
+              }
+            }
+          }
+        },
+        "429": {
+          "description": "Too Many Requests",
+          "headers": {
+            "Retry-After": "60"
+          }
+        }
+      },
+      "deprecated": false
+    }
+  ],
+  "sharedModels": {
+    "NormalizedDesignGraph": {
+      "type": "object",
+      "required": ["componentId", "nodes"],
+      "properties": {
+        "componentId": {
+          "type": "string",
+          "description": "Unique identifier mapped from the active component atlas."
+        },
+        "nodes": {
+          "type": "array",
+          "description": "Flattened array of visual elements."
+        }
+      }
+    },
+    "GenerationSuccessResponse": {
+      "type": "object",
+      "required": ["status", "code"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "example": "success"
+        },
+        "code": {
+          "type": "string",
+          "description": "The raw string output of the generated React file."
+        }
+      }
+    },
+    "ErrorResponse": {
+      "type": "object",
+      "required": ["error", "message"],
+      "properties": {
+        "error": {
+          "type": "string",
+          "description": "Machine-readable error code."
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable explanation of the failure."
+        }
+      }
+    }
+  }
+}

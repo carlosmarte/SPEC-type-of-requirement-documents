@@ -1,0 +1,81 @@
+{
+  "id": "sds-2026-05-auth-sync",
+  "metadata": {
+    "title": "Cross-Platform Authentication Sync",
+    "author": "Engineering Lead",
+    "reviewers": ["Security Architect", "Platform VPE"],
+    "status": "In Review",
+    "createdAt": "2026-05-15T14:30:00Z",
+    "updatedAt": "2026-05-16T09:15:00Z",
+    "tags": ["auth", "security", "infrastructure"]
+  },
+  "overview": "Proposed solution to synchronize session state across the React frontend, Fastify Node.js services, and FastAPI Python services to ensure polyglot parity in auth resolution.",
+  "goals": {
+    "inScope": [
+      "Unified JWT validation across all microservices",
+      "Centralized revocation list mechanism"
+    ],
+    "outOfScope": [
+      "Migration of existing legacy user database"
+    ],
+    "successMetrics": [
+      "0% mismatch in session resolution between Node and Python backends",
+      "<50ms p99 latency for token validation"
+    ]
+  },
+  "architecture": {
+    "pattern": "API Gateway with Shared Redis Cache",
+    "description": "All incoming requests hit a unified API gateway. Token validation is performed via a shared Redis cache accessible by both Node.js and Python ecosystems.",
+    "diagrams": ["https://internal-wiki.local/diagrams/auth-sync.png"],
+    "designDecisions": {
+      "Cache Selection": "Redis chosen over Memcached for native pub/sub support on token revocation."
+    }
+  },
+  "components": [
+    {
+      "id": "comp-redis-cluster",
+      "name": "Session Cache Cluster",
+      "type": "Database",
+      "responsibilities": ["Store active session IDs", "Broadcast revocation events"]
+    }
+  ],
+  "flows": [
+    {
+      "name": "Token Revocation Event",
+      "description": "User logs out, triggering a global session kill.",
+      "trigger": "User clicks 'Log Out'",
+      "steps": [
+        "React client calls /api/logout",
+        "Gateway invalidates token in Redis",
+        "Redis publishes 'revoke' event",
+        "Downstream services clear local memory cache"
+      ]
+    }
+  ],
+  "dependencies": {
+    "internalServices": ["User Identity Service", "Audit Logging Service"],
+    "externalAPIs": ["AWS Identity Center"],
+    "infrastructure": ["Redis Elasticache", "PostgreSQL 16"]
+  },
+  "risks": [
+    {
+      "id": "risk-1",
+      "description": "Redis cluster failure causes auth bottlenecks",
+      "impact": "Critical",
+      "likelihood": "Low",
+      "mitigationStrategy": "Deploy Redis in Multi-AZ configuration with automatic failover."
+    }
+  ],
+  "rolloutPlan": {
+    "strategy": "Phased",
+    "phases": [
+      {
+        "name": "Phase 1: Shadow Validation",
+        "targetAudience": "Internal Traffic Only",
+        "successCriteria": ["Logs show 100% agreement between old and new validation logic"],
+        "durationEstimate": "1 week"
+      }
+    ],
+    "rollbackProcedure": "Revert API Gateway routing rules to bypass the new validation middleware via emergency GitHub Action workflow."
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "id": "brd-2026-unified-payments",
+  "metadata": {
+    "title": "Unified Global Payment Gateway Integration",
+    "author": "Lead Business Analyst",
+    "executiveSponsor": "Chief Financial Officer (CFO)",
+    "status": "Approved",
+    "lastUpdated": "2026-05-16T10:00:00Z"
+  },
+  "executiveSummary": "This project aims to consolidate our 5 disparate regional payment processors into a single, global payment gateway (Stripe). This consolidation will reduce processing fees, simplify financial reconciliation, and allow us to easily enter new international markets.",
+  "businessGoals": [
+    {
+      "id": "BG-01",
+      "description": "Reduce overall transaction processing costs.",
+      "strategicAlignment": "Corporate OKR: Improve operational profit margins.",
+      "successMetric": "Decrease average transaction fee from 2.9% to 2.1% globally."
+    },
+    {
+      "id": "BG-02",
+      "description": "Accelerate time-to-market for international expansion.",
+      "strategicAlignment": "Corporate OKR: Launch in 3 new EMEA markets in 2027.",
+      "successMetric": "Ability to accept local payment methods (e.g., iDEAL, Bancontact) with zero additional engineering effort."
+    }
+  ],
+  "projectScope": {
+    "inScope": [
+      "Migration of all active North American and European customer billing to the new gateway.",
+      "Implementation of automated daily reconciliation reports for the Finance team."
+    ],
+    "outOfScope": [
+      "Migration of legacy, inactive accounts (canceled prior to 2025).",
+      "Cryptocurrency payment support."
+    ]
+  },
+  "stakeholders": [
+    {
+      "name": "Sarah Jenkins",
+      "role": "VP of Accounting",
+      "department": "Finance",
+      "influenceLevel": "High",
+      "coreExpectations": [
+        "No disruption to monthly revenue recognition workflows",
+        "Automated mapping of transaction fees to the general ledger"
+      ]
+    },
+    {
+      "name": "Marcus Thorne",
+      "role": "Director of Engineering",
+      "department": "Technology",
+      "influenceLevel": "High",
+      "coreExpectations": [
+        "Clear API documentation from the chosen vendor",
+        "Budget allocation for 3 backend engineers for 2 sprints"
+      ]
+    }
+  ],
+  "highLevelRequirements": [
+    {
+      "id": "BR-FIN-001",
+      "category": "Financial",
+      "description": "The system must support automatic currency conversion and settlement in USD, EUR, and GBP.",
+      "priority": "Critical"
+    },
+    {
+      "id": "BR-REG-002",
+      "category": "Regulatory",
+      "description": "The chosen solution must be PCI-DSS Level 1 compliant, offloading all credit card data storage from our internal servers.",
+      "priority": "Critical"
+    },
+    {
+      "id": "BR-OPS-003",
+      "category": "Operational",
+      "description": "Customer Support agents must have a unified dashboard to issue refunds without needing engineering assistance.",
+      "priority": "High"
+    }
+  ],
+  "financials": {
+    "estimatedCostCap": 150000,
+    "expectedFinancialBenefit": "$850,000 annual savings in processing fees and reduced engineering maintenance.",
+    "roiPercentage": 466,
+    "paybackPeriodMonths": 3
+  },
+  "assumptionsAndConstraints": {
+    "businessAssumptions": [
+      "The current payment volume ($100M/year) will remain stable or grow, ensuring we qualify for the vendor's enterprise discount tier."
+    ],
+    "resourceConstraints": [
+      "Project must be completed using existing internal engineering resources; no external contractors."
+    ],
+    "scheduleConstraints": [
+      "Must be fully deployed and tested prior to the October 1st code freeze ahead of the holiday shopping season."
+    ]
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "id": "runbook-2026-agentic-harness",
+  "metadata": {
+    "title": "Agentic Execution Harness Runbook",
+    "serviceIdRef": "sys-orchestration",
+    "ownerTeam": "Platform Engineering",
+    "status": "Active",
+    "lastUpdated": "2026-05-16T16:00:00Z",
+    "reviewCadenceDays": 90
+  },
+  "serviceOverview": {
+    "description": "Orchestrates ephemeral Docker containers to execute LLM-driven code generation tasks based on design metadata.",
+    "criticalityTier": "Tier 2",
+    "dependencies": ["AWS EKS Cluster", "HashiCorp Vault", "OpenAI/Anthropic APIs", "Design Ingestion Webhook"]
+  },
+  "dashboards": [
+    {
+      "name": "Agentic Harness - Primary Health",
+      "url": "https://datadog.internal.local/dashboard/agent-harness-health",
+      "description": "Displays active container counts, Vault token lease errors, and LLM API latency."
+    },
+    {
+      "name": "Agentic Harness - LLM Rate Limits",
+      "url": "https://datadog.internal.local/dashboard/llm-quota-tracking",
+      "description": "Tracks consumption against our external vendor API limits."
+    }
+  ],
+  "alerts": [
+    {
+      "alertName": "High Vault Token Injection Failure",
+      "severity": "SEV-2",
+      "triggerCondition": "> 5% of new agent containers fail to retrieve a Vault token within 10 seconds.",
+      "immediateAction": "Check the HashiCorp Vault cluster health dashboard. If Vault is healthy, proceed to Failure Mode FM-002.",
+      "linkedFailureModeId": "FM-002"
+    },
+    {
+      "alertName": "LLM API Rate Limit Exceeded (HTTP 429)",
+      "severity": "SEV-3",
+      "triggerCondition": "> 10 API requests per minute return a 429 status from the external LLM provider.",
+      "immediateAction": "Verify if a massive batch ingestion job was triggered. Throttle the upstream ingestion webhook if necessary.",
+      "linkedFailureModeId": "FM-001"
+    }
+  ],
+  "knownFailureModes": [
+    {
+      "id": "FM-001",
+      "symptom": "Agents are spinning up but timing out or receiving 429s from the LLM provider.",
+      "probableCauses": [
+        "Spike in design publish events overloading our quota tier",
+        "External vendor outage"
+      ],
+      "investigationSteps": [
+        "Check vendor status page (e.g., status.openai.com).",
+        "Run `kubectl logs -l app=agent-orchestrator -n code-gen-prod | grep '429'` to confirm rate limiting."
+      ],
+      "recoverySteps": [
+        "If vendor is degraded: Enable the 'Fallback Model' feature flag in LaunchDarkly (flag key: `agent-llm-fallback-enabled`).",
+        "If quota exceeded: Access the AWS API Gateway console and temporarily reduce the global rate limit on the ingestion webhook to queue events rather than process them immediately."
+      ],
+      "verificationSteps": [
+        "Observe the Datadog LLM Rate Limits dashboard; 429 errors should drop to 0 within 2 minutes."
+      ]
+    },
+    {
+      "id": "FM-002",
+      "symptom": "Agent pods are crashing in a CrashLoopBackOff state due to missing secrets.",
+      "probableCauses": [
+        "Vault proxy sidecar failing to authenticate with the Kubernetes service account."
+      ],
+      "investigationSteps": [
+        "Describe a failing pod: `kubectl describe pod <pod-name> -n code-gen-prod`.",
+        "Check Vault sidecar logs: `kubectl logs <pod-name> -c vault-agent -n code-gen-prod`."
+      ],
+      "recoverySteps": [
+        "Restart the Vault injector deployment: `kubectl rollout restart deployment vault-agent-injector -n vault-system`."
+      ],
+      "verificationSteps": [
+        "Watch the namespace: `kubectl get pods -n code-gen-prod -w`. Ensure new pods reach the 'Running' state."
+      ]
+    }
+  ],
+  "maintenanceTasks": [
+    {
+      "taskName": "Prune Zombie Agent Containers",
+      "frequency": "Daily",
+      "automationStatus": "Partially Automated",
+      "procedure": [
+        "A cronjob runs at 02:00 UTC to kill containers older than 4 hours.",
+        "If the cronjob fails (alert triggers), manually run the cleanup script located at `scripts/ops/prune_zombies.sh`."
+      ]
+    }
+  ],
+  "escalationPath": {
+    "primaryContact": "Primary On-Call",
+    "escalationTriggers": {
+      "Issue unresolved after 30 minutes": "Secondary On-Call",
+      "Issue involves complete data loss or security breach": "Engineering Manager"
+    },
+    "contactRosterUrl": "https://internal.pagerduty.com/schedules/platform-engineering"
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "id": "map-2026-design-to-code",
+  "metadata": {
+    "title": "PRD Mapping: Automated Design Handoff Phase 1",
+    "prdReferenceUrl": "https://wiki.internal.local/product/prd-design-handoff",
+    "productManager": "Lead PM, Workflow Tools",
+    "engineeringLead": "System Architect",
+    "status": "Approved",
+    "lastUpdated": "2026-05-16T17:00:00Z"
+  },
+  "executiveSummary": "Translates the Product team's requirement for a 'Zero-Click Design Handoff' into a technical implementation leveraging our external Figma Webhooks, the Agentic Orchestration Harness, and the Polyglot Generation Engine.",
+  "requirementMappings": [
+    {
+      "prdRequirementId": "PRD-F-001",
+      "userStory": "As a UX Designer, when I publish a component in Figma, I want a React component automatically created in our codebase so developers don't have to build it from scratch.",
+      "technicalTranslation": "Implement a webhook ingestion pipeline to capture Figma POST requests, parse the nested node JSON, normalize it into our internal Graph structure, and pass it to the Agentic Harness for React AST generation.",
+      "impactedComponents": [
+        "sys-ingestion",
+        "sys-orchestration",
+        "sys-generation"
+      ],
+      "outOfScopeTechnically": [
+        "Bi-directional sync (Code changes will NOT push back to Figma in Phase 1)",
+        "Generation of Vue or Angular components (React only for Phase 1)"
+      ]
+    },
+    {
+      "prdRequirementId": "PRD-F-002",
+      "userStory": "As an Engineering Manager, I want these automated components to go through our standard review process before hitting production.",
+      "technicalTranslation": "The generation engine must not push directly to the `main` branch. It must authenticate with the GitHub API, create a new branch, commit the generated AST, and open a Pull Request tagging the relevant CODEOWNERS.",
+      "impactedComponents": [
+        "sys-generation",
+        "github-integration-module"
+      ],
+      "outOfScopeTechnically": [
+        "Auto-merging PRs upon successful test passes."
+      ]
+    }
+  ],
+  "systemImpactSummary": {
+    "newServicesRequired": [
+      "Design Graph Ingestion Service (Fastify Node.js)",
+      "Agentic Execution Harness (FastAPI Python)"
+    ],
+    "legacyServicesModified": [
+      "Internal CI/CD Pipeline (adding automated testing for AI-generated PRs)"
+    ],
+    "databaseSchemaChanges": [
+      "Create new `active_component_atlas` table in PostgreSQL 16"
+    ],
+    "externalApiIntegrations": [
+      "Figma Enterprise Webhooks",
+      "GitHub REST API v3",
+      "OpenAI API (for fallback heuristics)"
+    ]
+  },
+  "engineeringPhases": [
+    {
+      "milestoneName": "Phase 1: Ingestion & Normalization",
+      "targetRelease": "End of Q2 2026",
+      "epics": [
+        {
+          "epicName": "Secure Webhook Listener",
+          "componentRef": "sys-ingestion",
+          "tasks": [
+            "Implement Fastify API endpoint for Figma",
+            "Add HMAC signature validation middleware",
+            "Set up Dead Letter Queue for failed payloads"
+          ],
+          "estimatedEffort": "Medium"
+        },
+        {
+          "epicName": "Data Normalization Graph",
+          "componentRef": "sys-ingestion",
+          "tasks": [
+            "Build recursive depth-first node parser",
+            "Implement PostgreSQL UPSERT logic for the atlas"
+          ],
+          "estimatedEffort": "Large"
+        }
+      ],
+      "blockers": [
+        "Pending InfoSec approval for external webhook routing through the API Gateway"
+      ]
+    }
+  ],
+  "technicalAssumptions": [
+    {
+      "id": "A-001",
+      "description": "Figma's webhook payload contains sufficient CSS metadata (auto-layout, fills, strokes) to generate accurate React styled-components without needing secondary API calls.",
+      "validationPlan": "Engineering will build a prototype parser script this sprint to analyze 50 diverse production payloads and verify metadata completeness before beginning the main AST work."
+    }
+  ]
+}

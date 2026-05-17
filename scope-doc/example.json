@@ -1,0 +1,90 @@
+{
+  "id": "scope-2026-hr-mobile-app",
+  "metadata": {
+    "projectName": "HR Employee Portal - V1 Mobile App",
+    "projectManager": "Sarah Jenkins",
+    "projectSponsor": "Chief Human Resources Officer (CHRO)",
+    "status": "Approved",
+    "version": "1.0.0",
+    "lastUpdated": "2026-05-16T14:00:00Z"
+  },
+  "projectJustification": "Currently, field employees without dedicated workstations struggle to access their paystubs or request time off via our desktop-optimized web portal. This project will deliver a mobile application to increase accessibility and reduce HR support tickets.",
+  "scopeDefinition": {
+    "inScope": [
+      "Development of a cross-platform (iOS and Android) mobile application.",
+      "Authentication using existing company Single Sign-On (SSO).",
+      "Read-only view of current and historical paystubs.",
+      "Ability to submit Paid Time Off (PTO) requests."
+    ],
+    "outOfScope": [
+      "Managerial approval workflows for PTO (Managers must continue to approve via the web portal).",
+      "Native iPad/Tablet optimized layouts (App will run in phone-compatibility mode on tablets).",
+      "Editing employee profile information or direct deposit details.",
+      "Offline mode support."
+    ]
+  },
+  "deliverables": [
+    {
+      "id": "DEL-01",
+      "name": "React Native Codebase",
+      "description": "The complete, documented source code for the mobile application merged into the main repository.",
+      "targetDate": "2026-08-01T00:00:00Z"
+    },
+    {
+      "id": "DEL-02",
+      "name": "App Store Submissions",
+      "description": "Approved listings in both the Apple App Store and Google Play Store.",
+      "targetDate": "2026-08-15T00:00:00Z"
+    }
+  ],
+  "boundariesAndConstraints": {
+    "budgetCap": 85000,
+    "hardDeadlines": [
+      "Must be live in app stores prior to Annual Open Enrollment starting September 1st."
+    ],
+    "resourceConstraints": [
+      "Project team is limited to 1 PM, 1 Designer, and 2 React Native Developers."
+    ],
+    "technicalBoundaries": [
+      "Must utilize the existing V2 REST APIs; no new backend database tables will be created for this project."
+    ]
+  },
+  "assumptions": [
+    "Apple and Google app store review processes will not exceed 2 weeks.",
+    "The existing V2 REST APIs can handle the projected 20% increase in traffic without requiring infrastructure scaling.",
+    "The SSO provider (Okta) supports mobile deep-linking without requiring a contract upgrade."
+  ],
+  "acceptanceCriteria": [
+    {
+      "deliverableIdRef": "DEL-01",
+      "criteria": [
+        "Code passes all SonarQube quality gates.",
+        "End-to-End tests pass on both iOS simulator and Android emulator.",
+        "Penetration testing confirms SSO tokens are stored securely in the device keychain/keystore."
+      ],
+      "approverRole": "Lead Mobile Architect"
+    },
+    {
+      "deliverableIdRef": "DEL-02",
+      "criteria": [
+        "App is available for download on public app stores.",
+        "Crash-free user rate is >99% during the first 7 days of beta testing."
+      ],
+      "approverRole": "Product Owner"
+    }
+  ],
+  "approvals": [
+    {
+      "role": "Project Sponsor (CHRO)",
+      "name": "Marcus Thorne",
+      "status": "Signed",
+      "dateSigned": "2026-05-15T09:30:00Z"
+    },
+    {
+      "role": "VP of Engineering",
+      "name": "David Chen",
+      "status": "Signed",
+      "dateSigned": "2026-05-16T11:00:00Z"
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "id": "srs-leave-system-v1",
+  "metadata": {
+    "title": "Employee Leave Request System",
+    "version": "1.0.0",
+    "lastUpdated": "2026-05-16T12:00:00Z"
+  },
+  "introduction": {
+    "purposeAndScope": "This document outlines the requirements for a new internal web application to manage employee paid time off (PTO) and sick leave requests.",
+    "definitionsAndAcronyms": {
+      "PTO": "Paid Time Off",
+      "HRIS": "Human Resources Information System"
+    },
+    "references": [
+      {
+        "documentName": "Company Employee Handbook 2026",
+        "locationOrUrl": "https://intranet.local/docs/handbook"
+      }
+    ],
+    "overviewOfTheDocument": "The document is organized starting with high-level background, followed by specific functional/data requirements, and concluding with technical appendices."
+  },
+  "overallDescription": {
+    "productPerspective": "This system will replace the legacy email-based approval process and integrate directly with our existing Workday HRIS.",
+    "assumptionsAndDependencies": [
+      "Employees have active Active Directory accounts for SSO.",
+      "Workday API remains stable."
+    ],
+    "constraints": [
+      "Must be fully WCAG 2.1 AA compliant.",
+      "Must be deployed on the internal AWS GovCloud instance."
+    ],
+    "stakeholdersAndUsers": [
+      {
+        "role": "Employees",
+        "description": "Users who submit leave requests."
+      },
+      {
+        "role": "Managers",
+        "description": "Users who approve or deny requests."
+      }
+    ],
+    "operatingEnvironment": "Modern web browsers (Chrome, Edge, Firefox). Mobile responsive layout required."
+  },
+  "specificRequirements": {
+    "functionalRequirements": [
+      {
+        "reqId": "FR-01",
+        "title": "Submit Leave Request",
+        "detailedBehavior": "Users shall be able to select start/end dates, choose a leave type, and submit the request for managerial approval."
+      }
+    ],
+    "nonFunctionalRequirements": [
+      {
+        "reqId": "NFR-01",
+        "category": "Performance",
+        "description": "The system must load the user dashboard in under 2 seconds on standard broadband connections."
+      }
+    ],
+    "interfaces": [
+      {
+        "interfaceId": "INT-01",
+        "apiOrSystemName": "Workday PTO Balance API",
+        "interactionDescription": "System performs a GET request to retrieve the user's available leave hours upon login."
+      }
+    ],
+    "dataRequirements": [
+      {
+        "entityName": "LeaveRequest",
+        "databaseDesignNotes": "Requires fields: id (UUID), user_id (FK), start_date (DATE), end_date (DATE), status (ENUM: Pending, Approved, Rejected)."
+      }
+    ],
+    "errorAndExceptionHandling": [
+      {
+        "scenario": "Workday API is unreachable",
+        "systemResponse": "Display friendly error message ('Unable to fetch balances at this time') and allow read-only access to past requests."
+      }
+    ],
+    "validationAndAcceptanceCriteria": [
+      {
+        "reqIdRef": "FR-01",
+        "criteria": [
+          "System prevents submission if requested dates overlap with an existing approved request.",
+          "System prevents submission if requested hours exceed available balance."
+        ]
+      }
+    ],
+    "dependenciesAndPriorities": [
+      {
+        "reqIdRef": "FR-01",
+        "priority": "High",
+        "dependsOnReqIds": ["INT-01"]
+      }
+    ]
+  },
+  "appendices": {
+    "glossary": {
+      "Managerial Approval": "The digital sign-off required by an employee's direct supervisor recorded in the HRIS."
+    },
+    "diagramsAndMockups": [
+      {
+        "title": "Dashboard Wireframe",
+        "assetUrl": "https://figma.com/file/leave-system/dashboard"
+      }
+    ],
+    "traceabilityMatrices": [
+      {
+        "title": "Jira Requirements to Test Cases",
+        "assetUrl": "https://jira.local/reports/traceability/PTO"
+      }
+    ],
+    "revisionHistory": [
+      {
+        "version": "1.0.0",
+        "date": "2026-05-15",
+        "author": "Jane Doe, Lead BA",
+        "changeDescription": "Initial baselined version."
+      }
+    ]
+  }
+}

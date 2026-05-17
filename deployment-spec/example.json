@@ -1,0 +1,116 @@
+{
+  "id": "infra-2026-polyglot-generation",
+  "metadata": {
+    "title": "Polyglot Generation Engine EKS Deployment",
+    "author": "Lead SRE",
+    "platformTeamOwner": "Cloud Infrastructure",
+    "status": "Approved",
+    "lastUpdated": "2026-05-16T12:00:00Z"
+  },
+  "environments": {
+    "Staging": {
+      "accountId": "987654321098",
+      "region": "us-east-1",
+      "hostingModel": "Kubernetes",
+      "computeDetails": {
+        "clusterName": "eks-staging-platform",
+        "namespace": "code-gen-staging",
+        "nodeSelector": "t3.medium"
+      },
+      "scaling": {
+        "minInstances": 2,
+        "maxInstances": 5,
+        "targetUtilizationPercent": 75,
+        "scaleOutCooldownSeconds": 60,
+        "scaleInCooldownSeconds": 300
+      }
+    },
+    "Production": {
+      "accountId": "123456789012",
+      "region": "us-east-1",
+      "hostingModel": "Kubernetes",
+      "computeDetails": {
+        "clusterName": "eks-prod-platform",
+        "namespace": "code-gen-prod",
+        "nodeSelector": "c6g.large (ARM64)"
+      },
+      "scaling": {
+        "minInstances": 5,
+        "maxInstances": 50,
+        "targetUtilizationPercent": 70,
+        "scaleOutCooldownSeconds": 30,
+        "scaleInCooldownSeconds": 300
+      }
+    }
+  },
+  "networking": {
+    "vpcIdRef": "vpc-0abc123def456",
+    "subnets": "Private",
+    "ingressRules": [
+      {
+        "protocol": "TCP",
+        "portRange": "443",
+        "sourceOrDestination": "sg-internal-api-gateway",
+        "description": "Allow traffic only from internal API Gateway"
+      }
+    ],
+    "egressRules": [
+      {
+        "protocol": "TCP",
+        "portRange": "443",
+        "sourceOrDestination": "0.0.0.0/0",
+        "description": "Allow outbound HTTPS for interacting with external AI APIs (e.g., OpenAI)"
+      }
+    ],
+    "dnsAndTls": {
+      "domainName": "generation.internal.local",
+      "loadBalancerType": "Application",
+      "certificateManager": "AWS ACM"
+    }
+  },
+  "ciCd": {
+    "sourceRepository": "github.com/internal-org/polyglot-generation-engine",
+    "buildRunner": "GitHub Actions",
+    "artifactRegistry": "AWS ECR",
+    "deploymentTool": "ArgoCD",
+    "requiredChecks": [
+      "ESLint / PyLint",
+      "Jest / PyTest Coverage > 85%",
+      "Snyk Container Scan",
+      "TruffleHog Secret Scan"
+    ]
+  },
+  "secretsManagement": {
+    "provider": "AWS Secrets Manager",
+    "injectedVia": "Sidecar Proxy",
+    "rotationPolicyDays": 30
+  },
+  "observability": {
+    "metricsProvider": "Datadog",
+    "logsProvider": "Splunk",
+    "tracingProvider": "OpenTelemetry via AWS Distro",
+    "criticalAlerts": [
+      {
+        "metric": "HTTP 5xx Error Rate",
+        "threshold": "> 1% of total requests",
+        "evaluationWindow": "5 minutes",
+        "routingKey": "PagerDuty-CodeGen-Sev1"
+      },
+      {
+        "metric": "Pod CPU Utilization",
+        "threshold": "> 90%",
+        "evaluationWindow": "10 minutes",
+        "routingKey": "Slack-Channel-#alerts-infra"
+      }
+    ]
+  },
+  "deploymentAndRollback": {
+    "strategy": "Blue/Green",
+    "promotionFlow": ["Staging", "Production"],
+    "automatedRollbackTriggers": [
+      "Datadog synthetics fail for > 2 minutes post-deployment",
+      "Error rate spikes > 5% on the Green cluster during traffic shift"
+    ],
+    "manualRollbackRunbookUrl": "https://wiki.internal.local/runbooks/argocd-manual-revert"
+  }
+}

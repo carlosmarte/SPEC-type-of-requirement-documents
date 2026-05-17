@@ -1,0 +1,50 @@
+{
+  "featureId": "FEAT-2026-AST-EXPORT",
+  "metadata": {
+    "title": "Bulk Export Components to ZIP",
+    "productManager": "PM, Developer Experience",
+    "engineeringLead": "Frontend Tech Lead",
+    "status": "Approved",
+    "targetRelease": "v2.5.0",
+    "lastUpdated": "2026-05-16T22:30:00Z"
+  },
+  "description": {
+    "summary": "Allows developers to select multiple AI-generated React components from the Atlas dashboard and download them packaged as a ZIP file.",
+    "userProblem": "Currently, developers must copy-paste generated code one file at a time, which is tedious when trying to bootstrap a new application with 10+ components.",
+    "proposedSolution": "Add a multi-select checkbox UI to the Atlas Grid view and a floating 'Export to ZIP' action bar that triggers a backend compression job.",
+    "outOfScope": [
+      "Exporting directly to a connected Git repository (planned for FEAT-2026-GIT-SYNC)",
+      "Transpiling the code to Vue or Angular before export"
+    ]
+  },
+  "priority": "Should Have",
+  "dependencies": {
+    "prerequisiteFeatures": ["FEAT-2026-GRID-VIEW-PAGINATION"],
+    "externalSystems": ["AWS S3 (for temporary ZIP file storage)"],
+    "teamDependencies": ["Cloud Infra team to provision the ephemeral S3 bucket lifecycle rules"]
+  },
+  "uiMockups": [
+    {
+      "viewName": "Atlas Grid - Multi-Select Mode",
+      "designLink": "https://figma.com/file/abc123def456/Atlas-Dashboard?node-id=402-12",
+      "interactionNotes": "Hovering over a component card reveals a checkbox in the top-left corner. Clicking any checkbox reveals the floating action bar at the bottom of the viewport.",
+      "stateVariants": [
+        "Default (No selection)",
+        "Active Selection (Floating bar visible)",
+        "Downloading State (Spinner on action bar)"
+      ],
+      "accessibilityRequirements": [
+        "Checkbox states must be readable by screen readers (aria-checked).",
+        "Floating action bar must trap focus when accessed via keyboard."
+      ]
+    }
+  ],
+  "apiContracts": [
+    {
+      "endpointPattern": "POST /api/v2/export/zip",
+      "purpose": "Triggers the backend job to fetch the ASTs, compile them into standard .tsx files, and compress them.",
+      "dataRequirements": "Accepts an array of `component_ids`. Returns a short-lived, pre-signed S3 download URL.",
+      "status": "Requires New Endpoint"
+    }
+  ]
+}

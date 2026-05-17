@@ -1,0 +1,115 @@
+{
+  "id": "spec-vulnrem-orchestration",
+  "metadata": {
+    "title": "Vulnrem Agentic Orchestration DAG",
+    "systemRef": "mta-toolkit-vulnerability",
+    "author": "AI Platform Team",
+    "lastUpdated": "2026-05-16T15:00:00Z"
+  },
+  "graphTopology": {
+    "nodes": [
+      {
+        "id": "AUDIT",
+        "implementationRef": "packages/mjs/src/nodes/local-audit.mjs",
+        "description": "Executes local ecosystem audit scripts."
+      },
+      {
+        "id": "PLANNER",
+        "implementationRef": "packages/mjs/src/nodes/planner.mjs",
+        "description": "Analyzes dependency tree and proposes version bumps. Refuses to propose versions already in state.attempts[]."
+      },
+      {
+        "id": "REMEDIATE",
+        "implementationRef": "packages/mjs/src/nodes/remediation.mjs",
+        "description": "Applies the fix or overrides transitive dependencies."
+      },
+      {
+        "id": "VALIDATE",
+        "implementationRef": "packages/mjs/src/nodes/validation.mjs",
+        "description": "Runs ecosystem tests and classifies exit codes."
+      }
+    ],
+    "routingEdges": [
+      {
+        "sourceNode": "TRIAGE",
+        "targetNode": "PLANNER",
+        "routingLogic": "routeAfterTriage: standard"
+      },
+      {
+        "sourceNode": "VALIDATE",
+        "targetNode": "PLANNER",
+        "routingLogic": "routeByTestResults: fail && attempts.length < maxAttempts",
+        "isCyclic": true
+      },
+      {
+        "sourceNode": "VALIDATE",
+        "targetNode": "REMEDIATE",
+        "routingLogic": "routeByTestResults: errorClass === 'error' (infra failure, no counter increment)",
+        "isCyclic": true
+      }
+    ],
+    "pureDecisions": ["PRECOMMIT"]
+  },
+  "stateSchema": {
+    "vulnerabilityContext": [
+      "cveId",
+      "package",
+      "currentVersion",
+      "severity",
+      "isTransitive"
+    ],
+    "appendOnlyLedgers": [
+      "attempts[]",
+      "evidence[]",
+      "errors[]",
+      "messages[]"
+    ],
+    "transientState": [
+      "status",
+      "triagePath",
+      "lastFailure",
+      "testsPassed"
+    ]
+  },
+  "humanInTheLoop": [
+    {
+      "kind": "major_bump_review",
+      "triggerCondition": "semverBumpType === 'major' && remediation.autoApply < 'major'",
+      "resumePayloadShape": "Enum: 'approved' | 'denied' | 'alternative:<version>'",
+      "notificationMethod": "SMTP + PR Comment"
+    },
+    {
+      "kind": "exception",
+      "triggerCondition": "triagePath === 'Exception' OR routeByTestResults cap reached",
+      "resumePayloadShape": "{ decision, approver, expiryDate }",
+      "notificationMethod": "SMTP + PR Comment"
+    }
+  ],
+  "durabilityAndMonitoring": {
+    "checkpointer": "SqliteSaver with WAL journaling and thread-level flock",
+    "storageLayout": {
+      "checkpoints.db": "SQLite checkpoint store",
+      "locks/<thread_id>.lock": "Per-thread file lock",
+      "artifacts/<thread_id>/<attempt_index>/lockfile.diff": "Sidecar diffs"
+    },
+    "monitoringDaemon": {
+      "intervalMinutes": 60,
+      "feedSources": ["OSV", "GHSA", "NVD", "KEV"],
+      "reawakenTrigger": "New CVE matches a paused thread's package"
+    }
+  },
+  "executionContracts": {
+    "exitCodeMatrix": {
+      "0": "Success",
+      "1": "Findings / PR blocked / SemVer-cutoff blocked",
+      "7": "HITL pause (interrupt awaiting human input)",
+      "75": "Thread lock contention",
+      "76": "Schema drift"
+    },
+    "architecturalInvariants": [
+      "Nodes do work, edges decide (Routing functions are pure).",
+      "Append-only ledgers: Planner reads attempts[] and refuses to repeat a known-bad target.",
+      "No git push: Promotion goes through GitHub Toolkit API only."
+    ]
+  }
+}

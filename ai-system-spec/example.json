@@ -1,0 +1,78 @@
+{
+  "id": "ai-spec-2026-polyglot-generation",
+  "metadata": {
+    "title": "Agentic Polyglot Code Generation Engine",
+    "author": "Lead AI Engineer",
+    "systemRef": "sys-generation",
+    "status": "Approved",
+    "lastUpdated": "2026-05-16T21:00:00Z"
+  },
+  "modelConfiguration": {
+    "primaryModel": "claude-3-5-sonnet",
+    "provider": "Anthropic",
+    "hyperparameters": {
+      "temperature": 0.1,
+      "maxTokens": 4096
+    },
+    "systemPrompts": {
+      "react_generator": "s3://internal-prompts/v2/react-styled-components-system.txt",
+      "fastify_generator": "s3://internal-prompts/v2/fastify-endpoint-system.txt"
+    }
+  },
+  "contextAndData": {
+    "retrievalStrategy": "Static Inject",
+    "injectedDataSchemas": [
+      "NormalizedDesignGraph (Figma metadata)",
+      "ActiveComponentAtlas (Existing related components via pgvector search)"
+    ],
+    "contextWindowLimit": 100000
+  },
+  "safetyAndGuardrails": {
+    "inputValidation": [
+      "Reject payloads exceeding maximum node depth (50 levels)",
+      "Strip unverified URLs from Figma text nodes to prevent prompt injection"
+    ],
+    "outputValidation": [
+      "Regex check: Output must not contain markdown code blocks (```) if raw JSON is requested",
+      "AST Parser: The generated string must compile cleanly using Babel/TypeScript parser",
+      "Secret Scanning: Reject outputs containing patterns matching internal API keys"
+    ],
+    "guardrailAction": "Block and Retry"
+  },
+  "reliability": {
+    "fallbackModel": "gpt-4o-mini",
+    "heuristicFallback": "Trigger the legacy v1 deterministic JSON-to-CSS template builder",
+    "humanReview": {
+      "trigger": "High-Risk Action",
+      "routingQueue": "GitHub Pull Request: Require 1 Approval from @platform-ui-team"
+    }
+  },
+  "evaluation": {
+    "offlineEvaluation": {
+      "datasetRef": "[github.com/internal-org/evals/design-to-code-golden-set-v3.json](https://github.com/internal-org/evals/design-to-code-golden-set-v3.json)",
+      "metrics": [
+        "AST Exact Match (Structure)",
+        "CSS Value Parity Score",
+        "ESLint Zero Warnings"
+      ]
+    },
+    "onlineEvaluation": {
+      "implicitFeedback": [
+        "Percentage of AI-generated PRs merged without commit additions",
+        "Number of generated files modified within 24 hours of merge"
+      ],
+      "explicitFeedback": []
+    }
+  },
+  "monitoringAndFinancials": {
+    "costControls": {
+      "maxBudgetPerDayUsd": 150.00,
+      "maxTokensPerSession": 25000,
+      "alertThresholds": [75, 90, 100]
+    },
+    "telemetry": {
+      "logInputsAndOutputs": true,
+      "complianceRetentionDays": 30
+    }
+  }
+}

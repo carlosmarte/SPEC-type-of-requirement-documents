@@ -1,0 +1,111 @@
+{
+  "id": "obs-2026-polyglot-generation",
+  "metadata": {
+    "title": "Polyglot Generation Engine Observability Spec",
+    "author": "Lead Site Reliability Engineer",
+    "systemRef": "sys-generation",
+    "status": "Approved",
+    "lastUpdated": "2026-05-16T20:00:00Z"
+  },
+  "serviceLevelObjectives": [
+    {
+      "id": "slo-gen-availability",
+      "name": "Code Generation API Availability",
+      "serviceLevelIndicator": "Percentage of non-5xx HTTP responses on /v2/react/components",
+      "targetPercentage": 99.9,
+      "evaluationWindow": "Rolling 28 days",
+      "errorBudgetPolicy": "If error budget drops below 10%, all non-critical feature merges are frozen until reliability is restored."
+    },
+    {
+      "id": "slo-gen-latency",
+      "name": "Code Generation Latency",
+      "serviceLevelIndicator": "Percentage of successful requests completed in < 1500ms",
+      "targetPercentage": 95.0,
+      "evaluationWindow": "Rolling 28 days",
+      "errorBudgetPolicy": "Alert Engineering Manager; prioritize performance tech debt in next sprint."
+    }
+  ],
+  "telemetry": {
+    "instrumentationStandard": "OpenTelemetry via AWS Distro (ADOT)",
+    "logs": {
+      "format": "JSON",
+      "standardAttributes": ["trace_id", "span_id", "env", "git_sha", "component_id"],
+      "piiMaskingRules": [
+        "Regex mask any strings matching potential JWT formats",
+        "Redact `external_node_id` if it originates from a private customer design file"
+      ],
+      "retentionDays": 30
+    },
+    "metrics": [
+      {
+        "name": "codegen.asts.generated.total",
+        "type": "Counter",
+        "description": "Total number of React ASTs successfully generated.",
+        "dimensions": ["language", "status_code", "trigger_source"]
+      },
+      {
+        "name": "codegen.agent.memory.usage",
+        "type": "Gauge",
+        "description": "Active memory consumption of the sandbox agent containers.",
+        "dimensions": ["pod_name", "namespace"]
+      },
+      {
+        "name": "codegen.llm.latency",
+        "type": "Histogram",
+        "description": "Latency of external calls to the LLM vendor API.",
+        "dimensions": ["vendor", "model_version"]
+      }
+    ],
+    "traces": {
+      "contextPropagation": "W3C Trace Context",
+      "samplingRate": {
+        "defaultPercentage": 5,
+        "errorPercentage": 100,
+        "criticalPaths": {
+          "/v2/react/components": 20
+        }
+      }
+    }
+  },
+  "dashboards": [
+    {
+      "name": "Polyglot Engine - Golden Signals",
+      "audience": "Engineering",
+      "keyPanels": [
+        "Traffic: Requests per second (RPS) grouped by endpoint",
+        "Errors: 4xx and 5xx rates over time",
+        "Latency: p50, p90, p99 heatmaps",
+        "Saturation: EKS Pod CPU and Memory utilization"
+      ]
+    },
+    {
+      "name": "Generation SLA & Business Metrics",
+      "audience": "Executive",
+      "keyPanels": [
+        "Current 28-day SLO Error Budget Burn Rate",
+        "Total lines of code generated (Daily/Weekly)",
+        "Cost per generation (LLM token usage vs output size)"
+      ]
+    }
+  ],
+  "alertingRules": [
+    {
+      "id": "alt-high-error-rate",
+      "name": "Sustained 5xx Error Rate",
+      "metricQuery": "avg(last_5m):sum:codegen.http.requests{status:5xx} / sum:codegen.http.requests{*} > 0.05",
+      "triggerCondition": "> 5% error rate sustained for 5 minutes",
+      "severity": "SEV-1",
+      "routingTarget": "PagerDuty: Platform-OnCall",
+      "runbookRef": "runbook-2026-agentic-harness#FM-003"
+    },
+    {
+      "id": "alt-fast-burn",
+      "name": "SLO Fast Burn",
+      "metricQuery": "avg(last_1h):slo.error_budget.burn_rate > 14.4",
+      "triggerCondition": "Consuming 2% of the monthly error budget in 1 hour",
+      "severity": "SEV-2",
+      "routingTarget": "PagerDuty: Platform-OnCall",
+      "runbookRef": "runbook-2026-agentic-harness#SLO-Degradation"
+    }
+  ]
+}

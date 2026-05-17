@@ -1,0 +1,60 @@
+{
+  "id": "adr-2026-004-task-graph-database",
+  "metadata": {
+    "title": "Use PostgreSQL for Task-Graph Relational Mapping",
+    "author": "System Architect",
+    "date": "2026-02-14T08:00:00Z",
+    "status": "Accepted",
+    "tags": ["database", "infrastructure", "task-graph"]
+  },
+  "context": "We are building a dependency-aware execution engine to manage hierarchical and graph-based relationships between workspace components. We need to select a primary datastore capable of traversing deep dependency trees rapidly while maintaining strong transactional guarantees for state updates during execution.",
+  "decision": "We will use PostgreSQL 16, leveraging Recursive Common Table Expressions (CTEs) and the `ltree` extension for hierarchical data querying, rather than adopting a dedicated NoSQL Graph Database.",
+  "alternativesConsidered": [
+    {
+      "name": "Neo4j",
+      "description": "A purpose-built, native graph database.",
+      "pros": [
+        "First-class support for complex graph traversal",
+        "Cypher query language is highly expressive for relationships"
+      ],
+      "cons": [
+        "Introduces a new infrastructure dependency to maintain",
+        "Overkill for the projected depth of our workspace component graphs (rarely > 10 levels deep)"
+      ],
+      "reasonForRejection": "The operational overhead of introducing and maintaining a separate graph database cluster outweighs the traversal performance benefits for our specific, relatively shallow tree structures."
+    },
+    {
+      "name": "DynamoDB (Adjacency List Pattern)",
+      "description": "AWS managed NoSQL key-value store using adjacency lists to represent graphs.",
+      "pros": [
+        "Zero infrastructure management",
+        "Highly scalable at consistent single-digit millisecond latency"
+      ],
+      "cons": [
+        "Complex application-side logic required to manage cascading updates",
+        "Multi-step recursive queries require multiple network round trips"
+      ],
+      "reasonForRejection": "Lacks native recursive query support, which would force the agent execution harness to handle pagination and memory management during complex tree resolutions."
+    }
+  ],
+  "consequences": {
+    "positive": [
+      "No new infrastructure stack to provision; we can use our existing RDS clusters.",
+      "Full ACID compliance ensures component execution states are never left orphaned.",
+      "Engineers are already highly proficient with SQL and Postgres tuning."
+    ],
+    "negative": [
+      "Extremely dense or highly interconnected cyclic graphs (if introduced later) will suffer performance penalties compared to native graph DBs.",
+      "Recursive CTEs can be difficult to read and debug for complex traversals."
+    ],
+    "neutral": [
+      "We will need to establish strict schema validation rules early to prevent infinite recursion in CTE queries."
+    ]
+  },
+  "relatedDocuments": {
+    "references": [
+      "hld-2026-design-to-code",
+      "lld-2026-orchestration-harness"
+    ]
+  }
+}

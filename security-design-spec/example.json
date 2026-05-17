@@ -1,0 +1,108 @@
+{
+  "id": "sec-2026-agentic-execution-harness",
+  "metadata": {
+    "title": "Agentic Execution Harness Security Spec",
+    "author": "Lead Security Architect",
+    "reviewers": ["Director of Engineering", "Platform VPE"],
+    "status": "Approved",
+    "lastUpdated": "2026-05-16T14:00:00Z"
+  },
+  "systemOverview": "Security posture for the environment orchestrating autonomous AI agents. The harness isolates LLM instruction execution, preventing unauthorized access to the broader network while securely passing GitHub and external API tokens into the agent sandbox.",
+  "identityAndAccess": {
+    "authentication": [
+      {
+        "type": "SSO",
+        "provider": "AWS Identity Center",
+        "description": "Used by engineers accessing the vulnerability-csv-workbench or viewing agent logs."
+      },
+      {
+        "type": "Mutual TLS",
+        "provider": "Internal CA",
+        "description": "Used for service-to-service communication between the Fastify ingress API and the Python orchestration backend."
+      }
+    ],
+    "authorization": {
+      "model": "RBAC",
+      "enforcementPoint": "Fastify API Middleware",
+      "roles": ["Platform_Admin", "Agent_Operator", "Read_Only"]
+    },
+    "mfaRequirements": "Hard hardware token (YubiKey) required for all human access to the harness control plane."
+  },
+  "dataProtection": {
+    "dataClassification": {
+      "Restricted": ["GitHub PATs", "Anthropic/OpenAI API Keys", "NPM Publish Tokens"],
+      "Confidential": ["Figma Node Metadata", "Generated AST Logic", "Vulnerability CSV Reports"],
+      "Internal": ["Task-Graph Dependency Trees", "Execution Timestamps"],
+      "Public": []
+    },
+    "encryptionAtRest": {
+      "algorithm": "AES-256-GCM",
+      "keyManagement": "AWS KMS (Customer Managed Keys)"
+    },
+    "encryptionInTransit": {
+      "algorithm": "TLS 1.3",
+      "keyManagement": "AWS Certificate Manager"
+    },
+    "piiHandlingStrategy": "The harness does not process PII. Any user identifiers in git histories are hashed before entering the LLM context window."
+  },
+  "secretsManagement": {
+    "storageMechanism": "HashiCorp Vault",
+    "rotationPolicy": "GitHub App tokens rotated automatically every 1 hour; LLM API keys rotated every 30 days.",
+    "accessControl": "Vault tokens are injected directly into the ephemeral agent sandbox memory and wiped upon task completion or container death."
+  },
+  "threatModel": {
+    "methodology": "STRIDE",
+    "trustBoundaries": [
+      "Between External Design Webhooks and Internal API Gateway",
+      "Between the Orchestrator and the Ephemeral Agent Sandbox",
+      "Between the Agent Sandbox and External LLM Providers"
+    ],
+    "identifiedThreats": [
+      {
+        "id": "T-001",
+        "description": "Prompt Injection via compromised Figma metadata causing the agent to execute malicious shell commands.",
+        "category": "Elevation of Privilege",
+        "severity": "Critical",
+        "mitigationStrategy": "Agent execution is restricted to a heavily locked-down Docker container with no network egress except to the LLM endpoint and a scoped internal git proxy. Sandbox runs without root privileges.",
+        "residualRisk": "An attacker might still trick the agent into generating broken or malicious React components, relying on downstream PR reviewers or CI secret scanning to catch it."
+      },
+      {
+        "id": "T-002",
+        "description": "Supply chain attack via a malicious npm package installed during a code-generation test step.",
+        "category": "Tampering",
+        "severity": "High",
+        "mitigationStrategy": "All agent environments use a private, read-only npm registry mirror with strict vulnerability gating.",
+        "residualRisk": "Zero-day npm vulnerabilities may bypass the mirror's static analysis."
+      }
+    ],
+    "abuseCases": [
+      {
+        "scenario": "An internal engineer uses the agent harness to exfiltrate code from a repository they do not have access to.",
+        "actor": "Malicious Insider",
+        "impact": "IP Theft",
+        "preventionMechanism": "The harness passes the user's specific OAuth token to the agent, ensuring the agent inherits only the exact repository permissions of the engineer invoking it."
+      }
+    ]
+  },
+  "auditAndMonitoring": {
+    "loggedEvents": [
+      "Agent Sandbox Start/Stop",
+      "All shell commands executed within the sandbox",
+      "External API calls to LLM providers",
+      "Vault token requests and revocations"
+    ],
+    "logStorage": "Splunk (Forwarded via Fluentd from the EKS nodes)",
+    "retentionPeriodDays": 365,
+    "alertingTriggers": [
+      "Sandbox attempts to access restricted internal IP ranges",
+      "Rate of token rotation failures > 5 per minute"
+    ]
+  },
+  "compliance": {
+    "applicableFrameworks": ["SOC 2 Type II"],
+    "mappedControls": {
+      "CC6.1": "Logical Access Security is enforced via AWS Identity Center and ephemeral Vault tokens.",
+      "CC7.2": "Security events are streamed to Splunk with immutable S3 backups."
+    }
+  }
+}

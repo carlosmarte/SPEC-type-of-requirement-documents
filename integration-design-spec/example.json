@@ -1,0 +1,71 @@
+{
+  "id": "ids-2026-figma-to-ingestion",
+  "metadata": {
+    "title": "Figma Webhook Integration",
+    "author": "Platform Integration Engineer",
+    "status": "Approved",
+    "businessContext": "Establishes a real-time pipeline to receive library publish events from our external design tool to kick off the autonomous code-generation workflow.",
+    "thirdPartyDependencies": ["Figma Enterprise API v1"]
+  },
+  "systems": {
+    "sourceSystem": {
+      "name": "Figma Webhooks",
+      "ownerTeam": "External Vendor",
+      "internalOrExternal": "External"
+    },
+    "targetSystem": {
+      "name": "Design Graph Ingestion Service",
+      "ownerTeam": "Platform Engineering",
+      "internalOrExternal": "Internal"
+    },
+    "middleware": {
+      "name": "AWS API Gateway",
+      "ownerTeam": "Cloud Infrastructure",
+      "internalOrExternal": "Internal"
+    }
+  },
+  "connectionDetails": {
+    "pattern": "Fire and Forget",
+    "protocol": "Webhook",
+    "syncVsAsync": "Asynchronous",
+    "expectedThroughput": "Spiky; typically < 50 req/min, bursting to 300 req/min during major library releases."
+  },
+  "dataContract": {
+    "format": "JSON",
+    "eventRoutingKey": "LIBRARY_PUBLISH",
+    "samplePayloadRef": "https://wiki.internal.local/schemas/figma-webhook-v1.json"
+  },
+  "resilience": {
+    "timeouts": {
+      "connectionTimeoutMs": 3000,
+      "readTimeoutMs": 10000
+    },
+    "retryPolicy": {
+      "strategy": "Exponential Backoff",
+      "maxAttempts": 5,
+      "initialIntervalMs": 2000,
+      "maxIntervalMs": 60000
+    },
+    "circuitBreaker": {
+      "enabled": false
+    }
+  },
+  "errorHandling": {
+    "idempotencyGuarantee": true,
+    "idempotencyKey": "webhook_id",
+    "deadLetterQueue": {
+      "enabled": true,
+      "destination": "arn:aws:sqs:us-east-1:123456789012:figma-webhook-dlq",
+      "reprocessingStrategy": "Automated Script"
+    },
+    "alertingRules": [
+      "Page On-Call if > 5 messages hit DLQ in a 5-minute window",
+      "Alert Slack if webhook signature validation fails > 3 times (potential intrusion)"
+    ]
+  },
+  "security": {
+    "authentication": "HMAC Signature",
+    "encryptionInTransit": "TLS 1.3",
+    "dataMaskingRequired": false
+  }
+}

@@ -1,0 +1,442 @@
+{
+  "title": "Fit Matrix — User Expectations × Surfaces",
+  "metadata": {
+    "description": "Gap analysis of platform capabilities across the SDK, Use-cases, and Example implementations.",
+    "lastUpdated": "2026-05-17T04:27:54Z",
+    "surfacesEvaluated": ["SDK (packages/ts/src)", "Use-case (use-cases/vuln…/src)", "Examples (vulns.json, integration/)"]
+  },
+  "legend": {
+    "PRESENT": "✅ Fully implemented and demonstrable.",
+    "PARTIAL": "🟡 Partially implemented, stubbed, or typed without full execution.",
+    "MISSING": "❌ Not implemented, no adapter, or missing from examples."
+  },
+  "capabilities": [
+    {
+      "id": "1a",
+      "expectation": "Trigger — programmatic SDK / harness",
+      "category": "Trigger",
+      "surfaces": {
+        "sdk": { "status": "PRESENT", "notes": "harness/agent-harness.ts:15-114" },
+        "useCase": { "status": "PRESENT", "notes": "main.ts:298-310" },
+        "examples": { "status": "PRESENT", "notes": "integration/single-cve-end-to-end.ts:43-99" }
+      }
+    },
+    {
+      "id": "1b",
+      "expectation": "Trigger — GitHub Copilot SDK",
+      "category": "Trigger",
+      "surfaces": {
+        "sdk": { "status": "PRESENT", "notes": "adapters/copilot.ts:35-88 (SSE handler)" },
+        "useCase": { "status": "PARTIAL", "notes": "typed (triggerSurface: 'copilot-sdk')" },
+        "examples": { "status": "MISSING", "notes": "no example" }
+      }
+    },
+    {
+      "id": "1c",
+      "expectation": "Trigger — VSCode Copilot",
+      "category": "Trigger",
+      "surfaces": {
+        "sdk": { "status": "MISSING", "notes": "no adapter file" },
+        "useCase": { "status": "PARTIAL", "notes": "typed ('vscode-copilot')" },
+        "examples": { "status": "MISSING", "notes": "no example" }
+      }
+    },
+    {
+      "id": "1d",
+      "expectation": "Trigger — script directly",
+      "category": "Trigger",
+      "surfaces": {
+        "sdk": { "status": "PRESENT", "notes": "cli/main.ts:87-333 (9 commands)" },
+        "useCase": { "status": "PRESENT", "notes": "triggerSurface: 'script-direct'" },
+        "examples": { "status": "PRESENT", "notes": "integration script" }
+      }
+    },
+    {
+      "id": "1e",
+      "expectation": "Trigger — LangGraph workflow directly",
+      "category": "Trigger",
+      "surfaces": {
+        "sdk": { "status": "PARTIAL", "notes": "LangGraph types in orchestrator/types.ts; no adapter" },
+        "useCase": { "status": "PARTIAL", "notes": "typed ('langgraph-direct')" },
+        "examples": { "status": "MISSING", "notes": "no example" }
+      }
+    },
+    {
+      "id": "1f",
+      "expectation": "Agent triggered by user prompt",
+      "category": "Trigger",
+      "surfaces": {
+        "sdk": { "status": "PARTIAL", "notes": "indirectly via Copilot SSE; no first-class chat entrypoint" },
+        "useCase": { "status": "MISSING", "notes": "" },
+        "examples": { "status": "MISSING", "notes": "" }
+      }
+    },
+    {
+      "id": "1g",
+      "expectation": "Setup State object (new or current chat session)",
+      "category": "Trigger",
+      "surfaces": {
+        "sdk": { "status": "PRESENT", "notes": "state/index.ts, persistence/session-gso.ts; AgentHarness.run(threadId, input) distinguishes new vs. resume" },
+        "useCase": { "status": "PRESENT", "notes": "plan.ts:43-98 (append-only ledger)" },
+        "examples": { "status": "PARTIAL", "notes": "integration script uses threadId but no chat-session shape" }
+      }
+    },
+    {
+      "id": "2a",
+      "expectation": "Data source — Fetch from API",
+      "category": "Data Source",
+      "surfaces": {
+        "sdk": { "status": "PARTIAL", "notes": "dataset/ingest.ts:20-136 (OSV only; GHSA/Snyk/Mend deferred)" },
+        "useCase": { "status": "PARTIAL", "notes": "typed" },
+        "examples": { "status": "MISSING", "notes": "no example" }
+      }
+    },
+    {
+      "id": "2b",
+      "expectation": "Data source — local CSV/JSON path",
+      "category": "Data Source",
+      "surfaces": {
+        "sdk": { "status": "PRESENT", "notes": "dataset/ingest.ts + dataset/schema-mapper.ts" },
+        "useCase": { "status": "PRESENT", "notes": "step2GetDataset" },
+        "examples": { "status": "PRESENT", "notes": "examples/*/vulns.json (JSON only; no CSV)" }
+      }
+    },
+    {
+      "id": "2c",
+      "expectation": "Shape — single repo + 1–2 vulns",
+      "category": "Data Source",
+      "surfaces": {
+        "sdk": { "status": "PRESENT", "notes": "VulnerabilitySchema array" },
+        "useCase": { "status": "PRESENT", "notes": "supported" },
+        "examples": { "status": "PRESENT", "notes": "both examples" }
+      }
+    },
+    {
+      "id": "2d",
+      "expectation": "Shape — collection of vulns",
+      "category": "Data Source",
+      "surfaces": {
+        "sdk": { "status": "PRESENT", "notes": "array" },
+        "useCase": { "status": "PRESENT", "notes": "supported" },
+        "examples": { "status": "MISSING", "notes": "no example exercises it" }
+      }
+    },
+    {
+      "id": "2e",
+      "expectation": "Shape — collection of repos + vulns",
+      "category": "Data Source",
+      "surfaces": {
+        "sdk": { "status": "MISSING", "notes": "no repos[] field on ingestion" },
+        "useCase": { "status": "MISSING", "notes": "" },
+        "examples": { "status": "MISSING", "notes": "" }
+      }
+    },
+    {
+      "id": "2f",
+      "expectation": "BatchIngestionSpec (id, metadata, dataSource, schemaMapping[], validationRules[], executionPolicies)",
+      "category": "Data Source",
+      "surfaces": {
+        "sdk": { "status": "MISSING", "notes": "type does not exist" },
+        "useCase": { "status": "MISSING", "notes": "" },
+        "examples": { "status": "MISSING", "notes": "" }
+      }
+    },
+    {
+      "id": "2g",
+      "expectation": "DataSourceFormat: 'CSV' | 'JSONL' | 'API_PULL'",
+      "category": "Data Source",
+      "surfaces": {
+        "sdk": { "status": "PARTIAL", "notes": "CSV + JSON file + OSV API supported; JSONL not enumerated; no discriminated union" },
+        "useCase": { "status": "MISSING", "notes": "" },
+        "examples": { "status": "MISSING", "notes": "" }
+      }
+    },
+    {
+      "id": "2h",
+      "expectation": "FieldMapping[] (sourceColumn / targetAgentStateField / transformLogic / isRequired)",
+      "category": "Data Source",
+      "surfaces": {
+        "sdk": { "status": "PARTIAL", "notes": "dataset/schema-mapper.ts:1-112 does inference, no typed FieldMapping array" },
+        "useCase": { "status": "MISSING", "notes": "" },
+        "examples": { "status": "MISSING", "notes": "" }
+      }
+    },
+    {
+      "id": "2i",
+      "expectation": "ValidationAction = 'Drop Row' | 'Halt Batch' | 'Send to Dead Letter Queue'",
+      "category": "Data Source",
+      "surfaces": {
+        "sdk": { "status": "MISSING", "notes": "" },
+        "useCase": { "status": "MISSING", "notes": "" },
+        "examples": { "status": "MISSING", "notes": "" }
+      }
+    },
+    {
+      "id": "2j",
+      "expectation": "BatchExecutionPolicy (concurrency, stagger, failure-threshold, dedup strategy)",
+      "category": "Data Source",
+      "surfaces": {
+        "sdk": { "status": "MISSING", "notes": "" },
+        "useCase": { "status": "MISSING", "notes": "" },
+        "examples": { "status": "MISSING", "notes": "" }
+      }
+    },
+    {
+      "id": "2k",
+      "expectation": "Record field — ecosystem",
+      "category": "Data Source",
+      "surfaces": {
+        "sdk": { "status": "MISSING", "notes": "not on VulnerabilitySchema; ecosystem detected by scripts/ecosystem-detect.ts instead" },
+        "useCase": { "status": "MISSING", "notes": "" },
+        "examples": { "status": "MISSING", "notes": "in vulns.json" }
+      }
+    },
+    {
+      "id": "2l",
+      "expectation": "Record field — dependency_type (direct/transitive)",
+      "category": "Data Source",
+      "surfaces": {
+        "sdk": { "status": "PARTIAL", "notes": "isTransitive: boolean is on schema; no dependency_type enum" },
+        "useCase": { "status": "PARTIAL", "notes": "same boolean" },
+        "examples": { "status": "PRESENT", "notes": "isTransitive: false in both vulns.json" }
+      }
+    },
+    {
+      "id": "2m",
+      "expectation": "Record field — target_branch",
+      "category": "Data Source",
+      "surfaces": {
+        "sdk": { "status": "MISSING", "notes": "" },
+        "useCase": { "status": "MISSING", "notes": "" },
+        "examples": { "status": "MISSING", "notes": "" }
+      }
+    },
+    {
+      "id": "2n",
+      "expectation": "Record field — max_auto_bump (patch/minor/major)",
+      "category": "Data Source",
+      "surfaces": {
+        "sdk": { "status": "PARTIAL", "notes": "lives on HarnessConfig.remediation.autoApply (global, not per-row) (config/types.ts:20-22)" },
+        "useCase": { "status": "MISSING", "notes": "per-row" },
+        "examples": { "status": "MISSING", "notes": "" }
+      }
+    },
+    {
+      "id": "2o",
+      "expectation": "Record field — is_kev",
+      "category": "Data Source",
+      "surfaces": {
+        "sdk": { "status": "PRESENT", "notes": "kev: boolean (schemas/vulnerability.ts)" },
+        "useCase": { "status": "PRESENT", "notes": "" },
+        "examples": { "status": "PRESENT", "notes": "\"kev\": false in both vulns.json" }
+      }
+    },
+    {
+      "id": "2p",
+      "expectation": "Record field — custom_test_cmd",
+      "category": "Data Source",
+      "surfaces": {
+        "sdk": { "status": "MISSING", "notes": "" },
+        "useCase": { "status": "MISSING", "notes": "" },
+        "examples": { "status": "MISSING", "notes": "" }
+      }
+    },
+    {
+      "id": "2q",
+      "expectation": "Record field — SARIF reachability link",
+      "category": "Data Source",
+      "surfaces": {
+        "sdk": { "status": "PARTIAL", "notes": "sarif/parser.ts exists; no binding from VulnerabilitySchema to a SARIF result id" },
+        "useCase": { "status": "MISSING", "notes": "" },
+        "examples": { "status": "MISSING", "notes": "" }
+      }
+    },
+    {
+      "id": "3",
+      "expectation": "Task analysis / Generative Orchestration Layer",
+      "category": "Orchestration",
+      "surfaces": {
+        "sdk": { "status": "PARTIAL", "notes": "orchestrator/multi-stage.ts:1-185 declares 13 nodes; nodes are stubs; LLM not wired" },
+        "useCase": { "status": "PARTIAL", "notes": "8-step plan.ts ledger" },
+        "examples": { "status": "PARTIAL", "notes": "integration script orchestrates types but logic is stub" }
+      }
+    },
+    {
+      "id": "4a",
+      "expectation": "ENV setup — install",
+      "category": "Environment",
+      "surfaces": {
+        "sdk": { "status": "PARTIAL", "notes": "scripts/runner.ts:26-54 has setup per ecosystem; not wired into graph" },
+        "useCase": { "status": "PARTIAL", "notes": "bootstrapCommandFor referenced" },
+        "examples": { "status": "MISSING", "notes": "no example installs" }
+      }
+    },
+    {
+      "id": "4b",
+      "expectation": "ENV setup — build",
+      "category": "Environment",
+      "surfaces": {
+        "sdk": { "status": "PARTIAL", "notes": "same script table" },
+        "useCase": { "status": "PARTIAL", "notes": "" },
+        "examples": { "status": "MISSING", "notes": "" }
+      }
+    },
+    {
+      "id": "5a",
+      "expectation": "Apply fix — current bump logic",
+      "category": "Apply",
+      "surfaces": {
+        "sdk": { "status": "PARTIAL", "notes": "applyMutationsNode (orchestrator/nodes.ts:46-71) does state transitions, not file edits" },
+        "useCase": { "status": "PARTIAL", "notes": "step5ClassifyFix" },
+        "examples": { "status": "MISSING", "notes": "no example actually applies" }
+      }
+    },
+    {
+      "id": "5b",
+      "expectation": "Apply fix — direct vs transitive (override/resolutions)",
+      "category": "Apply",
+      "surfaces": {
+        "sdk": { "status": "PARTIAL", "notes": "'override-transitive' script name reserved; impl missing" },
+        "useCase": { "status": "PARTIAL", "notes": "named in graph" },
+        "examples": { "status": "MISSING", "notes": "" }
+      }
+    },
+    {
+      "id": "5c",
+      "expectation": "Apply fix — env scope (dependencies vs devDependencies)",
+      "category": "Apply",
+      "surfaces": {
+        "sdk": { "status": "MISSING", "notes": "" },
+        "useCase": { "status": "MISSING", "notes": "" },
+        "examples": { "status": "MISSING", "notes": "" }
+      }
+    },
+    {
+      "id": "5d",
+      "expectation": "Apply fix — max_auto_bump cap enforcement",
+      "category": "Apply",
+      "surfaces": {
+        "sdk": { "status": "MISSING", "notes": "no enforcement code; only config field" },
+        "useCase": { "status": "MISSING", "notes": "" },
+        "examples": { "status": "MISSING", "notes": "" }
+      }
+    },
+    {
+      "id": "5e",
+      "expectation": "Apply fix — KEV bypass of HITL",
+      "category": "Apply",
+      "surfaces": {
+        "sdk": { "status": "PARTIAL", "notes": "mentioned in routing comments; not implemented" },
+        "useCase": { "status": "MISSING", "notes": "" },
+        "examples": { "status": "MISSING", "notes": "" }
+      }
+    },
+    {
+      "id": "5f",
+      "expectation": "Apply fix — pre-approved exception list",
+      "category": "Apply",
+      "surfaces": {
+        "sdk": { "status": "PARTIAL", "notes": "exception interrupt kind exists (interrupts/types.ts:1-47); no allowlist input" },
+        "useCase": { "status": "MISSING", "notes": "" },
+        "examples": { "status": "MISSING", "notes": "" }
+      }
+    },
+    {
+      "id": "6a",
+      "expectation": "Validation — run install/build/test after fix",
+      "category": "Validation",
+      "surfaces": {
+        "sdk": { "status": "PARTIAL", "notes": "validation node routes on testVerdict (read from interrupt payload, not from execution)" },
+        "useCase": { "status": "PARTIAL", "notes": "step6Validate runs runScript('validate')" },
+        "examples": { "status": "PARTIAL", "notes": "package.json test is stub || true" }
+      }
+    },
+    {
+      "id": "6b",
+      "expectation": "Validation — honor user/SDK validation instruction",
+      "category": "Validation",
+      "surfaces": {
+        "sdk": { "status": "MISSING", "notes": "no custom_test_cmd plumbing" },
+        "useCase": { "status": "MISSING", "notes": "" },
+        "examples": { "status": "MISSING", "notes": "" }
+      }
+    },
+    {
+      "id": "7a",
+      "expectation": "Reporting — deep analysis output",
+      "category": "Reporting",
+      "surfaces": {
+        "sdk": { "status": "PARTIAL", "notes": "no structured run-report object" },
+        "useCase": { "status": "PRESENT", "notes": "executionLedger[] append-only (types.ts:55-67)" },
+        "examples": { "status": "MISSING", "notes": "no example shows output" }
+      }
+    },
+    {
+      "id": "7b",
+      "expectation": "Reporting — path to logs",
+      "category": "Reporting",
+      "surfaces": {
+        "sdk": { "status": "PRESENT", "notes": "sandbox/exec.ts:47 writes per-command logs; no index/manifest" },
+        "useCase": { "status": "PRESENT", "notes": ".harness/plans/<threadId>.json" },
+        "examples": { "status": "MISSING", "notes": "" }
+      }
+    },
+    {
+      "id": "7c",
+      "expectation": "Reporting — summary of changes",
+      "category": "Reporting",
+      "surfaces": {
+        "sdk": { "status": "PARTIAL", "notes": "pr/composer.ts:54-98 writes markdown PR body" },
+        "useCase": { "status": "PARTIAL", "notes": "composePrBody invoked" },
+        "examples": { "status": "MISSING", "notes": "no diff materialized" }
+      }
+    },
+    {
+      "id": "8a",
+      "expectation": "PR raise — branch + push",
+      "category": "PR",
+      "surfaces": {
+        "sdk": { "status": "PARTIAL", "notes": "github/toolkit.ts:52-175 has createBranch / createFile / updateFile" },
+        "useCase": { "status": "PARTIAL", "notes": "typed" },
+        "examples": { "status": "MISSING", "notes": "" }
+      }
+    },
+    {
+      "id": "8b",
+      "expectation": "PR raise — create PR end-to-end",
+      "category": "PR",
+      "surfaces": {
+        "sdk": { "status": "PARTIAL", "notes": "createPullRequest exists; no graph node orchestrates it" },
+        "useCase": { "status": "PARTIAL", "notes": "github_promotion node declared" },
+        "examples": { "status": "MISSING", "notes": "examples stop at plan snapshot" }
+      }
+    },
+    {
+      "id": "9",
+      "expectation": "State flow discovered → investigating → mitigated → resolved",
+      "category": "State Flow",
+      "surfaces": {
+        "sdk": { "status": "PRESENT", "notes": "schemas/vulnerability.ts:16-22 (UserStatusSchema) + state/user-status.ts:8-22 (graph→user mapping)" },
+        "useCase": { "status": "PRESENT", "notes": "types.ts:96-108" },
+        "examples": { "status": "MISSING", "notes": "no example output shows a transition" }
+      }
+    }
+  ],
+  "aggregateCounts": {
+    "sdk": {
+      "present": 8,
+      "partial": 17,
+      "missing": 11
+    },
+    "useCase": {
+      "present": 8,
+      "partial": 13,
+      "missing": 15
+    },
+    "examples": {
+      "present": 4,
+      "partial": 5,
+      "missing": 27
+    }
+  }
+}

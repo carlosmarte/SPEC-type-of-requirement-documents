@@ -1,0 +1,76 @@
+{
+  "id": "dird-2026-customer-identity-sync",
+  "metadata": {
+    "title": "Global Customer Identity Data & Interface Spec",
+    "leadDataArchitect": "Director of Data Engineering",
+    "integrationLead": "Principal API Architect",
+    "status": "Approved",
+    "lastUpdated": "2026-05-16T16:30:00Z"
+  },
+  "conceptualArchitecture": "The central CDP acts as the single source of truth for Customer Identity. Updates to customer profiles trigger events onto the enterprise event bus (Kafka), which are subsequently consumed by the CRM (Salesforce) and the Billing Engine (Stripe).",
+  "dataModels": [
+    {
+      "domainName": "Customer Identity",
+      "entities": [
+        {
+          "name": "GlobalCustomerProfile",
+          "description": "The golden record for a user across all regional brands.",
+          "primaryKey": "global_id",
+          "estimatedVolume": "15 Million initial load; 5% annual growth"
+        }
+      ],
+      "relationships": [
+        "GlobalCustomerProfile (1) -> (N) RegionalAccounts"
+      ]
+    }
+  ],
+  "dataDictionary": [
+    {
+      "elementName": "global_id",
+      "entityRef": "GlobalCustomerProfile",
+      "dataType": "STRING",
+      "format": "UUIDv4",
+      "sensitivity": "Internal",
+      "isNullable": false,
+      "validationRules": ["Must conform to standard RFC 4122 UUID layout"]
+    },
+    {
+      "elementName": "primary_email",
+      "entityRef": "GlobalCustomerProfile",
+      "dataType": "STRING",
+      "format": "email format",
+      "sensitivity": "Restricted (PII/PHI)",
+      "isNullable": false,
+      "validationRules": ["Must pass standard email regex pattern", "Must be lowercased"]
+    }
+  ],
+  "dataFlows": [
+    {
+      "flowId": "DF-CDP-01",
+      "description": "Stream customer profile updates from CDP to enterprise event bus.",
+      "sourceSystem": "Customer Data Platform (CDP)",
+      "targetSystem": "Enterprise Kafka Cluster",
+      "frequency": "Event-Driven",
+      "transformationLogic": "Extract 'changes' array from CDP webhook. Mask raw passwords and payment tokens. Serialize to Avro format using Schema Registry version 3."
+    }
+  ],
+  "systemInterfaces": [
+    {
+      "interfaceId": "INT-KAFKA-PROFILE-UPDATES",
+      "name": "Customer Profile Update Topic",
+      "protocol": "Kafka",
+      "dataFormat": "Avro",
+      "schemaRef": "https://schema-registry.internal.local/subjects/customer-profile-value/versions/3",
+      "throughputExpectation": "Average 100 msgs/sec, Peak 5000 msgs/sec",
+      "errorHandling": "Failed deserializations trigger PagerDuty alert and route payload to 'customer-profile-dlq' topic."
+    }
+  ],
+  "governanceAndSecurity": {
+    "dataRetentionPolicy": "Active accounts retained indefinitely. Accounts marked 'Deleted' are retained in cold storage for 30 days before hard deletion script executes.",
+    "complianceRequirements": [
+      "CCPA (California Consumer Privacy Act)",
+      "GDPR (General Data Protection Regulation)"
+    ],
+    "encryptionStandards": "Payloads pushed to Kafka are encrypted at the field level for 'primary_email' using AWS KMS."
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "id": "intake-vulnrem-batch-v1",
+  "metadata": {
+    "pipelineName": "Q3 Enterprise Vulnerability Batch Intake",
+    "ownerTeam": "AppSec Platform",
+    "targetGraphRef": "vulnrem-core-dag",
+    "lastUpdated": "2026-05-16T16:45:00Z"
+  },
+  "dataSource": {
+    "sourceType": "CSV",
+    "locationUri": "./datasets/q3-high-critical-backlog.csv"
+  },
+  "schemaMapping": [
+    {
+      "sourceColumn": "Repository_URL",
+      "targetAgentStateField": "vulnerability.repoUrl",
+      "isRequired": true
+    },
+    {
+      "sourceColumn": "CVE_ID",
+      "targetAgentStateField": "vulnerability.cveId",
+      "isRequired": true
+    },
+    {
+      "sourceColumn": "Vulnerable_Package",
+      "targetAgentStateField": "vulnerability.package",
+      "isRequired": true
+    },
+    {
+      "sourceColumn": "Max_Bump_Allowed",
+      "targetAgentStateField": "remediation.autoApplyLimit",
+      "transformLogic": "Default to 'minor' if null",
+      "isRequired": false
+    },
+    {
+      "sourceColumn": "Custom_CI_Command",
+      "targetAgentStateField": "validation.customTestCommand",
+      "isRequired": false
+    }
+  ],
+  "validationRules": [
+    {
+      "ruleName": "Valid CVE Format",
+      "condition": "CVE_ID must match regex /^CVE-\\d{4}-\\d{4,}$/",
+      "onFailure": "Send to Dead Letter Queue"
+    },
+    {
+      "ruleName": "Known Ecosystem",
+      "condition": "Ecosystem inferred from repo must be supported (npm, pip, maven, go)",
+      "onFailure": "Drop Row"
+    }
+  ],
+  "executionPolicies": {
+    "maxConcurrentThreads": 5,
+    "staggerDelaySeconds": 15,
+    "failureThresholdPercentage": 20,
+    "deduplicationStrategy": "Skip Existing Open PRs"
+  }
+}

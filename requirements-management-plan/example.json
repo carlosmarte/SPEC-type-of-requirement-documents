@@ -1,0 +1,104 @@
+{
+  "id": "bap-2026-crm-migration",
+  "metadata": {
+    "title": "Requirements Management Plan: Global CRM Migration",
+    "businessAnalystLead": "Lead Business Systems Analyst",
+    "projectRef": "PRJ-CRM-2026",
+    "status": "Approved",
+    "lastUpdated": "2026-05-16T15:30:00Z"
+  },
+  "rolesAndResponsibilities": [
+    {
+      "roleName": "Lead Business Analyst",
+      "assignedTo": "Sarah Jenkins",
+      "responsibilities": [
+        "Facilitate elicitation workshops",
+        "Document User Stories and Epics in Jira",
+        "Maintain the Traceability Matrix"
+      ],
+      "signOffAuthority": false
+    },
+    {
+      "roleName": "VP of Sales (Project Sponsor)",
+      "assignedTo": "Marcus Thorne",
+      "responsibilities": [
+        "Provide strategic business goals",
+        "Resolve conflicting priorities between regional sales teams"
+      ],
+      "signOffAuthority": true
+    },
+    {
+      "roleName": "Lead QA Engineer",
+      "assignedTo": "Quality Assurance Team",
+      "responsibilities": [
+        "Review requirements for testability",
+        "Link test cases to approved User Stories"
+      ],
+      "signOffAuthority": false
+    }
+  ],
+  "elicitationStrategy": {
+    "primaryTechniques": ["Workshop", "Interview", "Document Analysis"],
+    "toolsUsed": ["Miro (Process Mapping)", "Zoom", "Confluence"],
+    "keyActivities": [
+      {
+        "activityName": "As-Is Process Mapping",
+        "technique": "Workshop",
+        "targetStakeholders": ["Regional Sales Managers", "Customer Success Leads"],
+        "expectedOutcome": "Document current pain points and manual workarounds in the legacy CRM."
+      },
+      {
+        "activityName": "Data Migration Rules",
+        "technique": "Document Analysis",
+        "targetStakeholders": ["Data Engineering"],
+        "expectedOutcome": "Map legacy database fields to the new CRM schema requirements."
+      }
+    ]
+  },
+  "requirementsLifecycle": {
+    "repositoryTool": "Jira Software (Requirements via Epics/Stories)",
+    "typesTracked": ["Business", "Functional", "Non-Functional", "Transition"],
+    "prioritizationFramework": "MoSCoW (Must Have, Should Have, Could Have, Won't Have)",
+    "validationSteps": [
+      "1. BA drafts Story + Acceptance Criteria",
+      "2. Peer review by Tech Lead for feasibility",
+      "3. Review by QA for testability",
+      "4. Formal sign-off by Product Owner/Sponsor (Moves to 'Ready for Dev')"
+    ]
+  },
+  "traceabilityApproach": {
+    "traceabilityTool": "Jira Advanced Roadmaps & Xray",
+    "linkageModel": [
+      "Business Objective (Confluence)",
+      "Epic (Jira)",
+      "User Story (Jira)",
+      "Test Execution (Xray)",
+      "Git Commit (Bitbucket)"
+    ],
+    "attributesTracked": ["Jira Status", "MoSCoW Priority", "Sponsor Sign-off Date", "Sprint Target"]
+  },
+  "changeControlProcess": {
+    "changeRequestMechanism": "Submission of a 'Change Request' Jira issue type linked to the baselined Epic.",
+    "impactAnalysisSLA": "72 hours for Engineering and BA to estimate cost/timeline impact.",
+    "changeControlBoard": [
+      "VP of Sales (Sponsor)",
+      "Director of Engineering",
+      "Lead Product Manager"
+    ],
+    "versioningScheme": "Stories are immutable once 'In Sprint'. Approved changes require cloning the story, suffixing with 'v2', and closing the original as 'Superseded'."
+  },
+  "communicationPlan": [
+    {
+      "reportName": "Requirements Elicitation Progress",
+      "frequency": "Weekly",
+      "audience": ["Project Sponsor", "Steering Committee"],
+      "deliveryMethod": "Automated Confluence Dashboard"
+    },
+    {
+      "reportName": "Change Control Log Review",
+      "frequency": "Bi-Weekly",
+      "audience": ["Change Control Board"],
+      "deliveryMethod": "Live 30-minute review meeting"
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "id": "mig-2026-task-graph-postgres",
+  "metadata": {
+    "title": "Task-Graph Migration: MongoDB to PostgreSQL 16",
+    "author": "Data Platform Lead",
+    "leadEngineer": "System Architect",
+    "status": "Approved",
+    "targetCompletionDate": "2026-06-30T00:00:00Z"
+  },
+  "executiveSummary": "Transitioning the workspace component dependency graphs from the legacy MongoDB collections to our new PostgreSQL 16 instances leveraging Recursive CTEs, enabling complex graph traversal for the Agentic Orchestration harness.",
+  "architectureStates": {
+    "currentStateDescription": "FastAPI services query MongoDB directly. Hierarchical resolutions require multiple round-trips over the network to stitch the graph together in application memory.",
+    "targetStateDescription": "FastAPI services query PostgreSQL 16. The database engine resolves the hierarchical trees natively using the `ltree` extension and recursive queries, returning a flattened, execution-ready array.",
+    "systemsToRetire": ["task-graph-mongo-cluster", "mongo-translation-middleware"],
+    "systemsToIntroduce": ["task-graph-pg-cluster", "aws-dms-cdc-pipeline"]
+  },
+  "dataMigration": {
+    "pattern": "Change Data Capture (CDC)",
+    "sourceDatastore": "MongoDB Atlas v5.0",
+    "targetDatastore": "AWS RDS PostgreSQL 16",
+    "estimatedVolume": "1.2 Billion Documents / 850GB",
+    "validationStrategy": [
+      "AWS DMS Validation confirms 100% row-level parity",
+      "Shadow reads: A shadow script queries both databases for 10,000 random root nodes and diffs the output arrays"
+    ],
+    "downtimeRequired": false
+  },
+  "backwardCompatibility": {
+    "requiresTranslationLayer": true,
+    "supportedLegacyClients": ["Legacy Node.js Worker v1.x"],
+    "breakingChanges": [
+      "Document _id fields (ObjectIDs) are mapping to UUIDv4"
+    ],
+    "mitigationForBreakingChanges": "A temporary API Gateway translation layer will intercept v1 traffic, map the incoming ObjectIDs to the new UUIDs via a lookup table, and route to the new endpoints."
+  },
+  "cutoverPlan": {
+    "strategy": "Parallel Run",
+    "downtimeWindow": "Zero Downtime",
+    "preRequisites": [
+      "AWS DMS CDC task must report replication lag under 1 second",
+      "Shadow read diffs must return 0% errors for 72 consecutive hours"
+    ],
+    "executionSteps": [
+      {
+        "order": 1,
+        "owner": "Data Platform Team",
+        "action": "Enable dual-writes from the application layer as the primary source of truth, demoting DMS to a fallback.",
+        "estimatedDurationMinutes": 15
+      },
+      {
+        "order": 2,
+        "owner": "Cloud Infrastructure",
+        "action": "Update Route53/API Gateway weights to shift 10% of read traffic to the PostgreSQL service.",
+        "estimatedDurationMinutes": 5
+      },
+      {
+        "order": 3,
+        "owner": "Automated Pipeline",
+        "action": "Monitor Datadog metrics for 1 hour. If p99 latency is stable, shift remaining 90% of traffic.",
+        "estimatedDurationMinutes": 60
+      }
+    ]
+  },
+  "rollbackStrategy": {
+    "pointOfNoReturn": "Step 3 (Traffic shift to 100%). After this point, writes occurring natively in Postgres will require a reverse-ETL script to bring Mongo back into parity.",
+    "automaticTriggers": [
+      "PostgreSQL CPU utilization spikes above 90% during the 10% traffic canary phase",
+      "5xx error rates exceed 1% on the new endpoints"
+    ],
+    "manualSteps": [
+      "Revert Route53 weights to 100% Mongo",
+      "Disable the dual-write feature flag in LaunchDarkly"
+    ],
+    "dataReconciliation": "If reverse-reconciliation is needed, execute the `pg-to-mongo-sync.py` script stored in the runbook repository to backfill any stranded writes."
+  },
+  "deprecationTimeline": {
+    "milestones": [
+      {
+        "date": "2026-07-15T00:00:00Z",
+        "action": "Remove the API Gateway Translation Layer (forcing all clients to v2 endpoints)"
+      },
+      {
+        "date": "2026-07-30T00:00:00Z",
+        "action": "Terminate MongoDB Atlas instances and delete associated VPC peering connections"
+      }
+    ],
+    "finalDecommissionDate": "2026-07-30T00:00:00Z"
+  }
+}

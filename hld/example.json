@@ -1,0 +1,104 @@
+{
+  "id": "hld-2026-design-to-code",
+  "metadata": {
+    "title": "Design-to-Code Intelligence Platform",
+    "architect": "System Architect",
+    "stakeholders": ["Director of Engineering", "VP of Product", "Lead Designer"],
+    "status": "Approved",
+    "lastUpdated": "2026-05-16T09:00:00Z"
+  },
+  "executiveSummary": "A platform establishing a reliable pipeline to traverse design graphs, map metadata to active component atlases, and autonomously generate production-ready frontend components, ensuring strict parity between UX intent and deployed code.",
+  "systemContext": {
+    "description": "The platform sits between the external design tool ecosystem and our internal CI/CD repositories.",
+    "primaryActors": ["UX Designers", "Frontend Engineers", "Autonomous AI Agents"],
+    "systemBoundary": "The system encapsulates the webhook listener, the orchestration harness, and the code generation engine. External design APIs and GitHub are outside the boundary."
+  },
+  "majorSystems": [
+    {
+      "id": "sys-ingestion",
+      "name": "Design Graph Ingestion Service",
+      "domain": "Data Extraction",
+      "coreResponsibilities": [
+        "Listen for external design publish webhooks",
+        "Traverse nested node structures",
+        "Normalize metadata into a standard intermediate graph format"
+      ]
+    },
+    {
+      "id": "sys-orchestration",
+      "name": "Agentic Execution Harness",
+      "domain": "Workflow Management",
+      "coreResponsibilities": [
+        "Manage the task-graph execution state",
+        "Provide defensive guardrails for AI agent execution",
+        "Route normalized data to specialized generation skills"
+      ]
+    },
+    {
+      "id": "sys-generation",
+      "name": "Polyglot Generation Engine",
+      "domain": "Code Synthesis",
+      "coreResponsibilities": [
+        "Map intermediate nodes to React component ASTs",
+        "Generate Fastify/FastAPI boilerplate for required backend endpoints"
+      ]
+    }
+  ],
+  "dataFlows": [
+    {
+      "id": "df-1",
+      "name": "Component Publish Pipeline",
+      "description": "Triggered when a designer publishes a new library component, flowing through to a pull request.",
+      "path": ["sys-ingestion", "sys-orchestration", "sys-generation"],
+      "criticalPath": true
+    }
+  ],
+  "integrations": [
+    {
+      "sourceSystemId": "External Design API",
+      "targetSystemId": "sys-ingestion",
+      "protocol": "REST",
+      "payloadType": "JSON Node Tree",
+      "syncVsAsync": "Asynchronous"
+    },
+    {
+      "sourceSystemId": "sys-ingestion",
+      "targetSystemId": "sys-orchestration",
+      "protocol": "gRPC",
+      "payloadType": "Protobuf (Normalized Graph)",
+      "syncVsAsync": "Synchronous"
+    },
+    {
+      "sourceSystemId": "sys-generation",
+      "targetSystemId": "GitHub Actions API",
+      "protocol": "REST",
+      "payloadType": "Git Tree Sha",
+      "syncVsAsync": "Asynchronous"
+    }
+  ],
+  "infrastructureShape": {
+    "topology": "Agentic-Workflow",
+    "cloudProvider": "AWS",
+    "computeTier": [
+      "AWS Fargate (for ingestion services)",
+      "EC2 Auto Scaling Groups (for intensive agent execution harnesses)"
+    ],
+    "storageTier": [
+      "PostgreSQL (for task-graph relational mapping)",
+      "Redis (for high-speed agent memory context)"
+    ],
+    "observability": [
+      "Splunk (infrastructure logs)",
+      "Custom LLM Telemetry Dashboard"
+    ]
+  },
+  "nonFunctionalRequirements": {
+    "scalability": "Must handle concurrent processing of up to 500 design graph updates per minute.",
+    "availability": "99.9% uptime during standard business hours; system can degrade to a queued state during ingestion API outages.",
+    "latency": "End-to-end processing from webhook receipt to PR generation must be under 3 minutes for libraries < 50 components.",
+    "security": [
+      "Strict secret scanning applied to all generated ASTs prior to PR creation",
+      "AWS Identity Center RBAC for all internal service-to-service calls"
+    ]
+  }
+}

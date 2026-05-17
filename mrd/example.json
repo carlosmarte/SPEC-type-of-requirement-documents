@@ -1,0 +1,115 @@
+{
+  "id": "mrd-2026-design-to-code",
+  "metadata": {
+    "title": "Design-to-Code Intelligence Platform MRD",
+    "author": "Director of Product Marketing",
+    "status": "Approved",
+    "targetLaunchQuarter": "Q3 2026",
+    "lastUpdated": "2026-05-16T15:00:00Z"
+  },
+  "executiveSummary": "The gap between UX design and frontend implementation costs enterprise software teams millions in lost productivity and delayed time-to-market. By leveraging AI to autonomously translate Figma designs into production-ready React code, we can capture a significant share of the DevTools market.",
+  "marketAnalysis": {
+    "marketProblem": "Developers spend 30-40% of their time translating visual designs into boilerplate UI code, leading to burnout, visual regression bugs, and slower feature delivery.",
+    "marketSize": {
+      "tamUsd": 12000000000,
+      "samUsd": 3500000000,
+      "somUsd": 150000000
+    },
+    "keyMarketTrends": [
+      "Widespread enterprise adoption of centralized Design Systems (e.g., Figma).",
+      "Increasing comfort with AI-assisted coding tools (e.g., GitHub Copilot).",
+      "Macroeconomic pressure on tech companies to do more with fewer engineering headcount."
+    ]
+  },
+  "targetAudience": {
+    "primarySegments": ["Enterprise", "Mid-Market"],
+    "buyerPersonas": [
+      {
+        "name": "The Efficiency Driver",
+        "role": "VP of Engineering / CTO",
+        "painPoints": [
+          "Engineering teams are too slow to ship features.",
+          "High cost of engineering salaries spent on low-value UI work."
+        ],
+        "buyingCriteria": [
+          "Must prove positive ROI within 6 months.",
+          "Must pass rigorous InfoSec and SOC2 compliance."
+        ]
+      }
+    ],
+    "userPersonas": [
+      {
+        "name": "The Relieved Builder",
+        "role": "Senior Frontend Developer",
+        "painPoints": [
+          "Hates pixel-pushing and arguing with designers over padding.",
+          "Wants to focus on complex state management and business logic."
+        ]
+      }
+    ]
+  },
+  "competitiveLandscape": [
+    {
+      "name": "Legacy Low-Code/No-Code Builders (e.g., Webflow, Retool)",
+      "tier": "Indirect",
+      "strengths": [
+        "Highly visual, easy for non-technical users."
+      ],
+      "weaknesses": [
+        "Produces 'spaghetti code' that cannot be integrated into complex, existing enterprise codebases.",
+        "Creates vendor lock-in."
+      ],
+      "ourCompetitiveAdvantage": "We do not host the code. We generate clean, idiomatic React ASTs that merge directly into the customer's existing Git repositories."
+    },
+    {
+      "name": "Manual Handoff",
+      "tier": "Status Quo / Manual",
+      "strengths": [
+        "No new tools to buy.",
+        "Total control over the output."
+      ],
+      "weaknesses": [
+        "Extremely slow, prone to human error and visual regressions."
+      ],
+      "ourCompetitiveAdvantage": "Reduces a 3-day manual workflow to a 3-minute automated PR review."
+    }
+  ],
+  "productPositioning": {
+    "valueProposition": "The only design-to-code platform that generates human-readable React components directly into your Git workflow.",
+    "elevatorPitch": "Stop paying senior engineers to write boilerplate CSS. Our platform connects directly to Figma, parses design intents, and uses AI to generate production-ready React components that seamlessly drop into your existing CI/CD pipelines.",
+    "keyDifferentiators": [
+      "Generates code that looks human-written.",
+      "Integrates with existing enterprise Design Systems rather than replacing them.",
+      "Zero-click pull requests."
+    ]
+  },
+  "marketRequirements": [
+    {
+      "id": "MR-001",
+      "theme": "Enterprise Security",
+      "description": "The platform must offer on-premise or VPC-peered deployment options, and must not train public models on customer code.",
+      "marketDriver": "Essential to clear procurement at Fortune 500 banks and healthcare companies."
+    },
+    {
+      "id": "MR-002",
+      "theme": "Framework Support",
+      "description": "Initial launch must support React and Tailwind CSS.",
+      "marketDriver": "React holds >70% of our target market's frontend ecosystem share."
+    }
+  ],
+  "goToMarketStrategy": {
+    "pricingModel": "$49/user/month (Devs + Designers) with an Enterprise Tier featuring custom model fine-tuning.",
+    "primarySalesChannels": [
+      "Product-Led Growth (Freemium tier for individual devs)",
+      "Top-down Enterprise Account Executives"
+    ],
+    "marketingChannels": [
+      "Developer Conferences (React Conf, Vercel Ship)",
+      "Technical Content Marketing (Engineering blogs, Hacker News)"
+    ],
+    "partnershipOpportunities": [
+      "Figma Community Plugin ecosystem",
+      "GitHub Actions Marketplace"
+    ]
+  }
+}

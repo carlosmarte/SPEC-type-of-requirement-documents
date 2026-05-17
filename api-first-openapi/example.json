@@ -1,0 +1,111 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Component Atlas Export API",
+    "description": "API for exporting generated React components from the active component atlas.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Platform Engineering",
+      "email": "api-support@internal.local"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.internal.local/v2",
+      "description": "Production API Gateway"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Export",
+      "description": "Operations for compiling and exporting generated code."
+    }
+  ],
+  "paths": {
+    "/export/zip": {
+      "post": {
+        "tags": ["Export"],
+        "summary": "Bulk Export Components to ZIP",
+        "description": "Accepts an array of component IDs, compiles their ASTs, and returns a pre-signed S3 URL to download the zipped code.",
+        "operationId": "exportComponentsToZip",
+        "security": [
+          { "bearerAuth": [] }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful export job initiated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid component IDs provided."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid Bearer token."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "ExportRequest": {
+        "type": "object",
+        "required": ["componentIds"],
+        "properties": {
+          "componentIds": {
+            "type": "array",
+            "description": "Array of UUIDs mapping to components in the Atlas.",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": ["123e4567-e89b-12d3-a456-426614174000", "987f6543-e21b-34c5-d678-426614174111"]
+          }
+        }
+      },
+      "ExportResponse": {
+        "type": "object",
+        "required": ["jobId", "downloadUrl", "expiresAt"],
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "description": "Internal job tracking ID."
+          },
+          "downloadUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Pre-signed S3 URL for downloading the generated ZIP file."
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp when the download URL expires."
+          }
+        }
+      }
+    }
+  }
+}

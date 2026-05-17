@@ -1,0 +1,151 @@
+{
+  "id": "uc-2026-manual-regeneration",
+  "metadata": {
+    "title": "Trigger Manual Component Regeneration",
+    "author": "UX Researcher / Systems Analyst",
+    "version": "1.2.0",
+    "status": "Approved",
+    "lastUpdated": "2026-05-16T22:00:00Z",
+    "relatedRequirements": ["PRD-F-001", "FR-GEN-042"]
+  },
+  "actors": [
+    {
+      "name": "Frontend Developer",
+      "type": "Primary",
+      "description": "The user interacting with the Component Atlas UI."
+    },
+    {
+      "name": "Component Atlas UI",
+      "type": "System",
+      "description": "The React-based frontend dashboard."
+    },
+    {
+      "name": "Generation Engine",
+      "type": "Secondary",
+      "description": "The backend system orchestrating the AI LLM tasks."
+    }
+  ],
+  "preconditions": [
+    "The Frontend Developer is authenticated via AWS Identity Center.",
+    "The developer has navigated to a specific Component Inspector View in the UI.",
+    "The underlying Figma node ID exists in the active_component_atlas database."
+  ],
+  "mainFlow": [
+    {
+      "stepNumber": 1,
+      "actorRef": "Frontend Developer",
+      "action": "Clicks the 'Regenerate Code' button."
+    },
+    {
+      "stepNumber": 2,
+      "actorRef": "Component Atlas UI",
+      "action": "Disables the button, displays a loading spinner, and sends a POST request to the Generation Engine API."
+    },
+    {
+      "stepNumber": 3,
+      "actorRef": "Generation Engine",
+      "action": "Fetches the latest normalized graph data for the component from the database."
+    },
+    {
+      "stepNumber": 4,
+      "actorRef": "Generation Engine",
+      "action": "Spins up an ephemeral agent container and passes the graph data to the LLM."
+    },
+    {
+      "stepNumber": 5,
+      "actorRef": "Generation Engine",
+      "action": "Receives the generated React AST, validates the syntax, and saves the new version to the database."
+    },
+    {
+      "stepNumber": 6,
+      "actorRef": "Generation Engine",
+      "action": "Returns an HTTP 200 Success response with the new code string."
+    },
+    {
+      "stepNumber": 7,
+      "actorRef": "Component Atlas UI",
+      "action": "Updates the CodeSnippetBlock with the new code, removes the spinner, and displays a success toast notification."
+    }
+  ],
+  "alternateFlows": [
+    {
+      "id": "ALT-01",
+      "name": "No Upstream Design Changes",
+      "branchingStepNumber": 3,
+      "condition": "The Generation Engine detects that the Figma metadata has not changed since the last generation timestamp.",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "actorRef": "Generation Engine",
+          "action": "Skips the LLM request to save API costs and immediately retrieves the existing code from the cache."
+        },
+        {
+          "stepNumber": 2,
+          "actorRef": "Generation Engine",
+          "action": "Returns HTTP 200 Success with a flag indicating 'Cached Response'."
+        }
+      ],
+      "rejoinsAtStepNumber": 7
+    }
+  ],
+  "exceptions": [
+    {
+      "id": "EXC-01",
+      "name": "LLM Rate Limit Exceeded",
+      "branchingStepNumber": 4,
+      "condition": "The external LLM provider returns a 429 Too Many Requests error.",
+      "handlingSteps": [
+        {
+          "stepNumber": 1,
+          "actorRef": "Generation Engine",
+          "action": "Logs the rate limit event and aborts the agent execution."
+        },
+        {
+          "stepNumber": 2,
+          "actorRef": "Generation Engine",
+          "action": "Returns an HTTP 429 error response to the UI."
+        },
+        {
+          "stepNumber": 3,
+          "actorRef": "Component Atlas UI",
+          "action": "Re-enables the 'Regenerate Code' button and displays a red toast notification: 'AI Provider is currently busy. Please try again in 1 minute.'"
+        }
+      ],
+      "systemStateAfter": "Terminated"
+    },
+    {
+      "id": "EXC-02",
+      "name": "AST Validation Failure",
+      "branchingStepNumber": 5,
+      "condition": "The LLM returns code that fails the internal Babel/TypeScript compilation check.",
+      "handlingSteps": [
+        {
+          "stepNumber": 1,
+          "actorRef": "Generation Engine",
+          "action": "Flags the generated code as INVALID in the database and prevents it from overwriting the current good state."
+        },
+        {
+          "stepNumber": 2,
+          "actorRef": "Generation Engine",
+          "action": "Returns an HTTP 422 Unprocessable Entity response containing the compilation error details."
+        },
+        {
+          "stepNumber": 3,
+          "actorRef": "Component Atlas UI",
+          "action": "Displays the error in the GenerationLogsPanel and prompts the user to either retry or submit a manual bug report."
+        }
+      ],
+      "systemStateAfter": "Rolled Back"
+    }
+  ],
+  "postconditions": {
+    "onSuccess": [
+      "The system database contains a new version record for the generated component.",
+      "The user's UI accurately reflects the newly generated code."
+    ],
+    "onFailure": [
+      "The component's previous stable code state remains untouched.",
+      "The user is clearly informed of why the generation failed."
+    ]
+  }
+}
